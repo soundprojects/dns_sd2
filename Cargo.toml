@@ -1,0 +1,17 @@
+[package]
+name = "dns_sd2"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+log = "0.4"
+pretty_env_logger = "0.4"
+rand = "0.8.5"
+socket2 = "0.4.4"
+tokio = { version = "1.20.1", features = [
+    "net",
+    "time",
+    "rt-multi-thread",
+    "macros",
+] }
