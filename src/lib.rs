@@ -43,19 +43,20 @@ use tokio::net::UdpSocket;
 const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 
 /// UTILITY FUNCTIONS
-///
+//
 
 /// Compress Name
 ///
 /// Message compression for optimizing MDNS Records
 ///
 /// [RFC6762 Section 18.14 - Name Compression](https://www.rfc-editor.org/rfc/rfc6762#section-18.14)
+///
 /// [RFC1035 Section 4.1.4 - Message Compression](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4)
 ///
 /// TODO Clarify protocol procedures
-//pub fn compress_name() -> String{
-//TODO
-//}
+pub fn compress_name() -> String {
+    todo!();
+}
 
 /// Decompress Name
 ///
@@ -65,9 +66,9 @@ const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 /// [RFC1035 Section 4.1.4 - Message Compression](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4)
 ///
 /// TODO Clarify protocol procedures
-//pub fn decompress_name() -> String{
-//TODO
-//}
+pub fn decompress_name() -> String {
+    todo!();
+}
 
 /// Lexicographic Comparison
 ///
@@ -79,7 +80,7 @@ const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 // Impl Custom ordering here for Service
 
 /// PROBING AND ANNOUNCING FUNCTIONS
-///
+//
 
 /// Probe MDNS Service
 ///
