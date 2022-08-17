@@ -1,13 +1,17 @@
 
 # DNSSD_2
 
-<img src="https://c.neevacdn.net/image/fetch/s--NpVnXOWX--/https%3A//www.rustacean.net/more-crabby-things/rustdocs.png?savepath=rustdocs.png" />
+<div id="header" align="center">
+
+<img src="https://c.neevacdn.net/image/fetch/s--NpVnXOWX--/https%3A//www.rustacean.net/more-crabby-things/rustdocs.png?savepath=rustdocs.png" width="200" height="200" />
+
 
 
 ![MIT License](https://img.shields.io/badge/License-MIT-green.svg)
 
 ![Checks](https://img.shields.io/github/checks-status/soundprojects/dns_sd2/master)
 
+</div>
 This crate is attempting to correctly implement the functionality defined for the MDNS and DNSSD protocols.
 
 
