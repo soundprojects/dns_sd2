@@ -17,7 +17,6 @@
 // TTL decreasing mechanism
 
 //Handle questions and resolves
-//Announcement and probing
 
 //Implement a timeout mechanism which waits for either a timeout or a response
 //Use select! with a counter for the retries
@@ -42,8 +41,65 @@ use tokio::net::UdpSocket;
 //MULTICAST Constants
 const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 
+pub mod enums;
+pub mod header;
+pub enum ServiceState {
+    Prelude,
+    Probing,
+    Announcing,
+    Registered,
+    ShuttingDown,
+}
+
+///PRELUDE FUNCTIONS
+//
+
+/// Check Unique Responder
+///
+/// When there might be multiple responders on the system,
+/// the port for UDP messages might be occupied without the REUSE_ADDR set
+/// This prevents us from receiving UDP Messages
+///
+/// This step is only available if MdnsResolver state is `State::Prelude`
+///
+/// [RFC6762 Section 15.1 - Receiving Unicast Responses](https://www.rfc-editor.org/rfc/rfc6762#section-15.1)
+/// - Attempt to bind a UDP Socket to port 5353 without setting REUSE_ADDR
+/// - If this fails, this means another program is already using this port
+/// - Return Error:PortNotAvailable
+pub async fn check_unique_responder() -> io::Result<()> {
+    todo!();
+}
+
+/// Handle Query
+///
+/// When there might be multiple responders on the system,
+/// the port for UDP messages might be occupied without the REUSE_ADDR set
+/// This prevents us from receiving UDP Messages
+///
+/// This step is only available if MdnsResolver state is `State::Prelude`
+///
+/// [RFC6762 Section 15.1 - Receiving Unicast Responses](https://www.rfc-editor.org/rfc/rfc6762#section-15.1)
+/// - Attempt to bind a UDP Socket to port 5353 without setting REUSE_ADDR
+/// - If this fails, this means another program is already using this port
+/// - Return Error:PortNotAvailable
+pub async fn handle_query() -> io::Result<()> {
+    todo!();
+}
+
 /// UTILITY FUNCTIONS
 //
+
+/// Is Reachable
+///
+/// Determine whether a query host is reachable
+///
+/// Compares the host IP addresses with the available interface IP addresses
+///
+/// [RFC1035 Section 11 - Source Address Check](https://www.rfc-editor.org/rfc/rfc1035#section-11)
+///
+pub fn is_reachable() -> bool {
+    todo!();
+}
 
 /// Compress Name
 ///
@@ -63,10 +119,29 @@ pub fn compress_name() -> String {
 /// Message decompression for optimizing MDNS Records
 ///
 /// [RFC6762 Section 18.14 - Name Compression](https://www.rfc-editor.org/rfc/rfc6762#section-18.14)
+///
 /// [RFC1035 Section 4.1.4 - Message Compression](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4)
 ///
 /// TODO Clarify protocol procedures
 pub fn decompress_name() -> String {
+    todo!();
+}
+
+/// Update TTL
+///
+/// Update TTL Values for the given records
+///
+///
+/// [RFC1035 Section 10 - Resource Record TTL Values and Cache Coherency](https://www.rfc-editor.org/rfc/rfc6762#section-10)
+///
+/// Most DNS TTL are set to a 75 minute default
+/// Other responses where the host name is equal to the record name (A, AAAA, SRV) are set to 120 seconds
+/// When the TTL default is down by 80%, a new query is necessary
+///
+/// - Decrease TTL for each record by 1
+/// - Verify if TTL cache rules are met
+/// - Notify if new query is necessary
+pub fn update_ttl() -> io::Result<()> {
     todo!();
 }
 
@@ -77,7 +152,7 @@ pub fn decompress_name() -> String {
 /// [RFC6762 Section 8.2 - Simultaneous Probe Tiebreak](https://www.rfc-editor.org/rfc/rfc6762#section-8.2)
 ///
 /// TODO Clarify protocol procedures
-// Impl Custom ordering here for Service
+// Impl Ord for Service{}
 
 /// PROBING AND ANNOUNCING FUNCTIONS
 //
@@ -149,6 +224,23 @@ pub async fn announce() -> io::Result<()> {
     //TODO Send unsollicited response
 
     Ok(())
+}
+
+///SHUTDOWN FUNCTIONS
+//
+
+/// Send Goodbye Packets
+///
+/// Last step in MDNS shutdown protocol
+///
+/// When a service is dropped, send a goodbye record so other hosts know this service is gone
+///
+/// This step is only available if MdnsResolver state is `State::ShuttingDown`
+///
+/// [RFC6762 Section 10.1 - Goodbye Packets](https://www.rfc-editor.org/rfc/rfc6762#section-10.1)
+/// - Send unsollicited response with a TTL of 0
+pub async fn goodbye() -> io::Result<()> {
+    todo!();
 }
 
 /// Something
