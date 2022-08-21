@@ -36,6 +36,7 @@ use std::{
 use rand::Rng;
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
+use thiserror::Error;
 use tokio::net::UdpSocket;
 
 //MULTICAST Constants
@@ -43,12 +44,24 @@ const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 
 pub mod enums;
 pub mod header;
+pub mod message;
+pub mod service;
+
 pub enum ServiceState {
     Prelude,
     Probing,
     Announcing,
     Registered,
     ShuttingDown,
+}
+
+#[derive(Debug, Error)]
+pub enum MdnsError {
+    #[error("Address is already taken")]
+    AddressAlreadyTaken {
+        #[from]
+        source: io::Error,
+    },
 }
 
 ///PRELUDE FUNCTIONS
@@ -66,23 +79,91 @@ pub enum ServiceState {
 /// - Attempt to bind a UDP Socket to port 5353 without setting REUSE_ADDR
 /// - If this fails, this means another program is already using this port
 /// - Return Error:PortNotAvailable
-pub async fn check_unique_responder() -> io::Result<()> {
-    todo!();
+///
+/// # Example
+///
+/// In this example we consider our responder to be unique.
+/// However, there might already be a MDNS Resolver running on the OS.
+/// This will mean that `check_unique_responder()` will return `Err("Address is already taken")`
+///
+/// ```rust,no_run
+/// use dns_sd2::check_unique_responder;
+///
+/// #[tokio::main]
+/// async fn main(){
+///
+/// assert!(check_unique_responder().await.is_ok());
+///
+/// }
+/// ```
+///
+pub async fn check_unique_responder() -> Result<(), MdnsError> {
+    debug!("Checking for Unique Responder");
+
+    //Create a udp ip4 socket
+    let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
+
+    //Do not allow this port to be reused by other sockets to test if socket is already bound to
+    socket.set_reuse_address(false)?;
+
+    //Create IPV4 any adress
+    let address = SocketAddrV4::new(IP_ANY.into(), 5353);
+
+    //Bind to wildcard 0.0.0.0
+    socket.bind(&SockAddr::from(address))?;
+
+    debug!("Responder is unique!");
+
+    Ok(())
 }
 
 /// Handle Query
 ///
-/// When there might be multiple responders on the system,
-/// the port for UDP messages might be occupied without the REUSE_ADDR set
-/// This prevents us from receiving UDP Messages
+/// When a query is received on the interface, it is handled through this function
 ///
-/// This step is only available if MdnsResolver state is `State::Prelude`
+/// - Determine if caches need to be flushed (with 1s timeout
 ///
-/// [RFC6762 Section 15.1 - Receiving Unicast Responses](https://www.rfc-editor.org/rfc/rfc6762#section-15.1)
-/// - Attempt to bind a UDP Socket to port 5353 without setting REUSE_ADDR
-/// - If this fails, this means another program is already using this port
-/// - Return Error:PortNotAvailable
+/// [RFC6762 Section 10.2 - Announcements to Flush Outdated Cache Entries](https://www.rfc-editor.org/rfc/rfc6762#section-10.2)
+///
+/// - Determine if this query is a query we are preparing ourselves
+///
+/// [RFC6762 Section 7.3 - Duplicate Question Supression](https://www.rfc-editor.org/rfc/rfc6762#section-7.3)
+///
+/// - Determine if there is passive failure (lack of response after this query where we would have expected it)
+
 pub async fn handle_query() -> io::Result<()> {
+    todo!();
+}
+
+/// Handle Response
+///
+/// When a response is received on the interface, it is handled through this function
+///
+/// - Determine if this message is truncated
+/// - Defer response by 400-500 ms to allow for more known answers to be received
+///
+/// [RFC6762 Section 7.2 - Multicast Known Answer Supression](https://www.rfc-editor.org/rfc/rfc6762#section-7.2)
+///
+/// - Determine if TTL of known answers is less than half of the correct TTL -> do not include record
+///
+/// [RFC6762 Section 7.1 - Multicast Known Answer Supression](https://www.rfc-editor.org/rfc/rfc6762#section-7.2)
+///
+/// - Determine if caches need to be flushed (with 1s timeout)
+///
+/// [RFC6762 Section 10.2 - Announcements to Flush Outdated Cache Entries](https://www.rfc-editor.org/rfc/rfc6762#section-10.2)
+///
+/// - Determine if this is a goodbye packet (TTL of 0)
+/// - Set TTL to 1 so service is removed after 1 second
+///
+/// [RFC6762 Section 10.1 - Goodbye Packets](https://www.rfc-editor.org/rfc/rfc6762#section-10.1)
+///
+/// - Determine if this is an update or a possible conflict
+///
+/// - Determine if this is a response we are preparing ourselves
+///
+/// [RFC6762 Section 7.4 - Duplicate Answer Supression](https://www.rfc-editor.org/rfc/rfc6762#section-7.4)
+
+pub async fn handle_response() -> io::Result<()> {
     todo!();
 }
 
@@ -282,7 +363,7 @@ pub async fn something() -> io::Result<()> {
     let udp_std_socket: std::net::UdpSocket = socket.into();
 
     //Convert to tokio udp socket
-    let udp_socket = UdpSocket::from_std(udp_std_socket)?;
+    let _udp_socket = UdpSocket::from_std(udp_std_socket)?;
 
     info!(
         "Created a UDP Socket at {}, {}",
