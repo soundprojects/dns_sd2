@@ -30,9 +30,14 @@ extern crate log;
 
 use std::{
     io,
-    net::{Ipv4Addr, SocketAddrV4},
+    net::{Ipv4Addr, Ipv6Addr, SocketAddrV4},
+    ops::{BitAnd, BitAndAssign},
 };
 
+use bitvec::{
+    prelude::Msb0,
+    view::{AsBits, BitViewSized},
+};
 use rand::Rng;
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
@@ -170,15 +175,58 @@ pub async fn handle_response() -> io::Result<()> {
 /// UTILITY FUNCTIONS
 //
 
-/// Is Reachable
+/// Is Reachable Ipv4
 ///
 /// Determine whether a query host is reachable
 ///
 /// Compares the host IP addresses with the available interface IP addresses
 ///
-/// [RFC1035 Section 11 - Source Address Check](https://www.rfc-editor.org/rfc/rfc1035#section-11)
+/// [RFC6762 Section 11 - Source Address Check](https://www.rfc-editor.org/rfc/rfc6762#section-11)
 ///
-pub fn is_reachable() -> bool {
+/// - Get the octets from the host and source Ip Address e.g. `[192,168,1,1]`
+/// - Get the octets from the Subnet e.g. `[255,255,255,0]`
+/// - Perform a bitwise AND operator (0 + 0 = 0, 0 + 1 = 0, 1 + 1 = 1) on both network addresses
+/// - Host and source network should be equal in order to be reachable
+///
+/// # Example
+///
+/// `192.168.1.1` and `192.168.1.30` should be in the same network if the subnet is `255.255.255.0`
+///  
+/// ```rust
+///
+/// use std::net::Ipv4Addr;
+///
+/// use dns_sd2::is_reachable_ipv4;
+///
+/// assert!(is_reachable_ipv4(&Ipv4Addr::new(192,168,1,1), &Ipv4Addr::new(255,255,255,0), &Ipv4Addr::new(192,168,1,30)));
+///
+/// assert!(!is_reachable_ipv4(&Ipv4Addr::new(192,168,1,1), &Ipv4Addr::new(255,255,255,0), &Ipv4Addr::new(192,168,2,30)));
+
+/// ```
+pub fn is_reachable_ipv4(host_ip: &Ipv4Addr, host_subnet: &Ipv4Addr, source_ip: &Ipv4Addr) -> bool {
+    let host_network = host_ip
+        .octets()
+        .into_bitarray::<Msb0>()
+        .bitand(host_subnet.octets().into_bitarray());
+
+    let source_network = source_ip
+        .octets()
+        .into_bitarray::<Msb0>()
+        .bitand(host_subnet.octets().into_bitarray());
+
+    host_network == source_network
+}
+
+/// Is Reachable Ipv6
+///
+/// Determine whether a query host is reachable
+///
+/// Compares the host IP addresses with the available interface IP addresses
+///
+/// [RFC6762 Section 11 - Source Address Check](https://www.rfc-editor.org/rfc/rfc6762#section-11)
+///
+/// TODO Implement Ipv6 Example
+pub fn is_reachable_ipv6(host_ip: &Ipv6Addr, host_subnet: &Ipv6Addr, source_ip: &Ipv6Addr) -> bool {
     todo!();
 }
 
