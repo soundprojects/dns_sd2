@@ -12,8 +12,38 @@
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 /// |                     QCLASS                    |
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+pub struct Question {
+    pub name: String,
+    pub qtype: QType,
+    pub qclass: QClass,
+}
+
+/// DNS QClass
+///
+/// QClass defines what network class the question is asking for
+///
+/// QClass are a superset of Class, so all Class are valid QClass
+///
+/// This field is used in Queries and Resource Records
+///
+/// [RFC1035 Section 3.2.5 - CLASS Values](https://www.rfc-editor.org/rfc/rfc1035#section-3.2.5)
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum QClass {
+    // 1 The Internet
+    In = 1,
+    // 2 CSNet class (Obsolete)
+    Cs = 2,
+    // 3 The Chaos class
+    Ch = 3,
+    // 4 Hesiod (Dyer 87)
+    Hs = 4,
+    //255 Any Class
+    Any = 255,
+}
 
 /// DNS QType
+///
+/// QType defines what the question is asking for
 ///
 /// QTypes are a superset of Types, so all Types are valid QTypes
 ///
