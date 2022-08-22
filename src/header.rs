@@ -94,7 +94,7 @@ impl Header {
         }
     }
 
-    pub fn parse(data: BitVec<u16, Msb0>) -> Result<Self, String> {
+    pub fn parse(_data: BitVec<u16, Msb0>) -> Result<Self, String> {
         todo!();
     }
 

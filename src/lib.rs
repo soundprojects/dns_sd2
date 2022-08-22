@@ -31,13 +31,14 @@ extern crate log;
 use std::{
     io,
     net::{Ipv4Addr, Ipv6Addr, SocketAddrV4},
-    ops::{BitAnd, BitAndAssign},
+    ops::BitAnd,
 };
 
 use bitvec::{
-    prelude::Msb0,
-    view::{AsBits, BitViewSized},
+    prelude::{BitArray, Msb0},
+    view::BitViewSized,
 };
+use message::MdnsMessage;
 use rand::Rng;
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
@@ -126,7 +127,7 @@ pub async fn check_unique_responder() -> Result<(), MdnsError> {
 ///
 /// When a query is received on the interface, it is handled through this function
 ///
-/// - Determine if caches need to be flushed (with 1s timeout
+/// - Determine if caches need to be flushed (with 1s timeout)
 ///
 /// [RFC6762 Section 10.2 - Announcements to Flush Outdated Cache Entries](https://www.rfc-editor.org/rfc/rfc6762#section-10.2)
 ///
@@ -136,7 +137,7 @@ pub async fn check_unique_responder() -> Result<(), MdnsError> {
 ///
 /// - Determine if there is passive failure (lack of response after this query where we would have expected it)
 
-pub async fn handle_query() -> io::Result<()> {
+pub async fn handle_query(_query: &MdnsMessage) -> io::Result<()> {
     todo!();
 }
 
@@ -168,7 +169,7 @@ pub async fn handle_query() -> io::Result<()> {
 ///
 /// [RFC6762 Section 7.4 - Duplicate Answer Supression](https://www.rfc-editor.org/rfc/rfc6762#section-7.4)
 
-pub async fn handle_response() -> io::Result<()> {
+pub async fn handle_response(_response: &MdnsMessage) -> io::Result<()> {
     todo!();
 }
 
@@ -226,7 +227,11 @@ pub fn is_reachable_ipv4(host_ip: &Ipv4Addr, host_subnet: &Ipv4Addr, source_ip: 
 /// [RFC6762 Section 11 - Source Address Check](https://www.rfc-editor.org/rfc/rfc6762#section-11)
 ///
 /// TODO Implement Ipv6 Example
-pub fn is_reachable_ipv6(host_ip: &Ipv6Addr, host_subnet: &Ipv6Addr, source_ip: &Ipv6Addr) -> bool {
+pub fn is_reachable_ipv6(
+    _host_ip: &Ipv6Addr,
+    _host_subnet: &Ipv6Addr,
+    _source_ip: &Ipv6Addr,
+) -> bool {
     todo!();
 }
 
@@ -234,12 +239,18 @@ pub fn is_reachable_ipv6(host_ip: &Ipv6Addr, host_subnet: &Ipv6Addr, source_ip: 
 ///
 /// Message compression for optimizing MDNS Records
 ///
+/// This compression means that names which are repeated in records are replaced by a pointer
+/// to the first place where this name appears. The pointer is an octet which has the first two bits set, followed
+/// by the offset indicating the place where we can find the original name
+///
+/// Labels start with the first two bits set to zero
+///
 /// [RFC6762 Section 18.14 - Name Compression](https://www.rfc-editor.org/rfc/rfc6762#section-18.14)
 ///
 /// [RFC1035 Section 4.1.4 - Message Compression](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4)
 ///
-/// TODO Clarify protocol procedures
-pub fn compress_name() -> String {
+/// Split the domain into parts and calculate lengths per label
+pub fn compress_name(_message: &BitArray) -> BitArray {
     todo!();
 }
 
