@@ -147,12 +147,10 @@ impl Default for RCode {
 impl Header {
     /// New Header
     ///
-    /// Returns a `Header` with default values of an empty query with id of 1
+    /// Returns a `Header` with default values of an empty query with id of 0
     /// zero record counts and all flags set to false
     pub fn new() -> Self {
-        let mut header = Header::default();
-        header.id = 1;
-        header
+        Header::default()
     }
 }
 
