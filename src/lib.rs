@@ -51,6 +51,7 @@ const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 pub mod enums;
 pub mod header;
 pub mod message;
+pub mod record;
 pub mod service;
 
 pub enum ServiceState {
@@ -244,7 +245,12 @@ pub fn is_reachable_ipv6(
 /// by the offset indicating the place where we can find the original name
 ///
 /// Labels start with the first two bits set to zero
+/// 
+/// Compression is only applied to RR where the format is specified:
+/// CNAME NS MX A AAAA PTR
 ///
+/// Name compression SHOULD NOT be applied to SRV Records
+/// 
 /// [RFC6762 Section 18.14 - Name Compression](https://www.rfc-editor.org/rfc/rfc6762#section-18.14)
 ///
 /// [RFC1035 Section 4.1.4 - Message Compression](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4)
