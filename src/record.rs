@@ -1,4 +1,5 @@
 use crate::enums::{QType, QClass};
+use std::fmt::Debug;
 
 /// [RFC1035 Section 4.1.3 - Resource record format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.3)
 ///                                 1  1  1  1  1  1
@@ -21,7 +22,8 @@ use crate::enums::{QType, QClass};
 /// /                     RDATA                     /
 /// /                                               /
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-pub struct ResourceRecord {
+#[derive(Debug)]
+pub struct ResourceRecord{
     //NAME      a domain name to which this record pertains
     //
     //          is of variable length, padding is not applied
@@ -47,7 +49,27 @@ pub struct ResourceRecord {
     //RDATA     a variable length string of octets that describes the
     //          resource.  The format of this information varies
     //          according to the TYPE and CLASS of the resource record
+    //
+    //          Implementation is done through the RData trait allowing methods for packing to a byte array
+    //          See structs in the ./records folder
+    pub rdata: Option<Box<dyn RData>>,
+}
 
-    //TODO This needs a proper struct with implementations for every RR Type/Class Combination
-    pub rdata: String,
+
+/// RData Trait
+/// 
+/// Trait describing functions for the RData field of a Resource Record
+/// Allows for packing and unpacking byte arrays in and from Resource Records
+pub trait RData{
+
+    fn pack(&self){}
+
+    fn unpack(&self){}
+}
+
+///TODO TEST THIS
+impl Debug for dyn RData{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "RData : {{{:?}}}", self)
+    }
 }

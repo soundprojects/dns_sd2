@@ -12,6 +12,7 @@
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 /// |                     QCLASS                    |
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+#[derive(Clone, Debug)]
 pub struct Question {
     //a domain name represented as a sequence of labels, where          
     //each label consists of a length octet followed by that

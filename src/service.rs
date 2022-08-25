@@ -8,3 +8,11 @@ use crate::ServiceState;
 pub struct MdnsService {
     pub state: ServiceState,
 }
+
+
+impl MdnsService{
+
+    pub fn start(){}
+
+    pub fn drop(){}
+}
