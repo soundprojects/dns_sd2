@@ -1,4 +1,4 @@
-use crate::enums::{QType, QClass};
+use crate::enums::{QClass, QType};
 use std::fmt::Debug;
 
 /// [RFC1035 Section 4.1.3 - Resource record format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.3)
@@ -23,7 +23,7 @@ use std::fmt::Debug;
 /// /                                               /
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 #[derive(Debug)]
-pub struct ResourceRecord{
+pub struct ResourceRecord {
     //NAME      a domain name to which this record pertains
     //
     //          is of variable length, padding is not applied
@@ -55,20 +55,18 @@ pub struct ResourceRecord{
     pub rdata: Option<Box<dyn RData>>,
 }
 
-
 /// RData Trait
-/// 
+///
 /// Trait describing functions for the RData field of a Resource Record
 /// Allows for packing and unpacking byte arrays in and from Resource Records
-pub trait RData{
+pub trait RData {
+    fn pack(&self) {}
 
-    fn pack(&self){}
-
-    fn unpack(&self){}
+    fn unpack(&self) {}
 }
 
 ///TODO TEST THIS
-impl Debug for dyn RData{
+impl Debug for dyn RData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "RData : {{{:?}}}", self)
     }

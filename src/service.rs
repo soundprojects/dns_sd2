@@ -9,10 +9,8 @@ pub struct MdnsService {
     pub state: ServiceState,
 }
 
+impl MdnsService {
+    pub fn start() {}
 
-impl MdnsService{
-
-    pub fn start(){}
-
-    pub fn drop(){}
+    pub fn drop() {}
 }

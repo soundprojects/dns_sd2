@@ -2,6 +2,15 @@
 name = "dns_sd2"
 version = "0.1.0"
 edition = "2021"
+keywords = ["dnssd", "mdns", "dns_sd"]
+categories = ["network-programming"]
+
+description = "dns_sd2 is a crate which attempts to correctly implement DNS_SD and Mdns RFC Specifications for registering and browsing services"
+
+readme = "README.md"
+license-file = "LICENSE"
+
+repository = "https://github.com/soundprojects/dns_sd2"
 
 
 [dependencies]

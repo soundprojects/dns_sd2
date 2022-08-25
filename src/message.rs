@@ -1,13 +1,9 @@
-use crate::{
-    enums::Question,
-    header::Header,
-    record::ResourceRecord
-};
+use crate::{enums::Question, header::Header, record::ResourceRecord};
 
 /// MDNS Message
 ///
 /// Message struct for an MDNS Message
-/// 
+///
 /// UDP Messages may not exceed 512 octets
 /// If the message is larger, the message needs to be split with the truncated flag set for all but the last message
 ///
@@ -35,9 +31,9 @@ pub struct MdnsMessage {
     //
     //                  Note: This section should not be confused with the AA (Authoritive Answer) bit in the Header section
     //                  This bit can only be se set for responses while the authorities section is filled when querying and responding during probing
-    //              
+    //
     //                  [6762 Section 8.2 - Simultaneous Probe Tiebreaking](https://www.rfc-editor.org/rfc/rfc1035#section-8.2)
-    //                  
+    //
     pub authorities: Vec<ResourceRecord>,
     //Additionals       Additional records which the responder might consider useful in addition to its answers
     //                  For example, the responder might send its known A and AAAA records when answering to a SRV Question

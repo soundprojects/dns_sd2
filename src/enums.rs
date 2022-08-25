@@ -14,7 +14,7 @@
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 #[derive(Clone, Debug)]
 pub struct Question {
-    //a domain name represented as a sequence of labels, where          
+    //a domain name represented as a sequence of labels, where
     //each label consists of a length octet followed by that
     //number of octets.  The domain name terminates with the
     //zero length octet for the null label of the root.  Note
