@@ -48,7 +48,7 @@ use tokio::net::UdpSocket;
 //MULTICAST Constants
 const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 
-pub mod enums;
+pub mod question;
 pub mod header;
 pub mod message;
 pub mod record;

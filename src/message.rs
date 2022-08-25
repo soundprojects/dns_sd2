@@ -1,4 +1,4 @@
-use crate::{enums::Question, header::Header, record::ResourceRecord};
+use crate::{question::Question, header::Header, record::ResourceRecord};
 
 /// MDNS Message
 ///
