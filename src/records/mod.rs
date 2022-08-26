@@ -1,5 +1,5 @@
-pub mod A;
-pub mod AAAA;
-pub mod PTR;
-pub mod SRV;
-pub mod TXT;
+pub mod a;
+pub mod aaaa;
+pub mod ptr;
+pub mod srv;
+pub mod txt;

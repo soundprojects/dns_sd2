@@ -1,18 +1,7 @@
-// TODO UDP SOCKET STRUCTURE
-// Create a UDP Socket for every available interface on some IP
-// Join multicast group
 // Subscribe to changes and reconnect after a problem has occured
 
 //Parse incoming messages and sort them by mdns type
 //Trigger events
-
-//Send types
-
-// TODO DNS Struct
-// Message type
-// Header
-// TTL
-// RRData
 
 // TTL decreasing mechanism
 

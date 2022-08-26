@@ -1,5 +1,7 @@
 use packed_struct::prelude::*;
 
+use crate::record::RData;
+
 /// A Resource Record
 ///
 ///
@@ -12,4 +14,14 @@ pub struct ARecord {
     //      Hosts that have multiple internet addresses have multiple A records
     #[packed_field(bits = "0..=31")]
     pub ip: [u8; 4],
+}
+
+impl RData for ARecord {
+    fn to_bytes(&self) -> Vec<u8> {
+        self.pack().expect("Failed to pack A record").into()
+    }
+
+    fn parse(&self) -> Option<Box<dyn RData + Send>> {
+        None
+    }
 }

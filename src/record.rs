@@ -1,4 +1,9 @@
-use crate::question::{QClass, QType};
+use packed_struct::PackedStruct;
+
+use crate::{
+    question::{QClass, QType},
+    records::{a::ARecord, aaaa::AAAARecord, ptr::PTRRecord, srv::SRVRecord},
+};
 use std::fmt::Debug;
 
 /// [RFC1035 Section 4.1.3 - Resource record format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.3)
@@ -55,14 +60,107 @@ pub struct ResourceRecord {
     pub rdata: Option<Box<dyn RData>>,
 }
 
+impl ResourceRecord {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        vec![]
+    }
+
+    pub fn create_a_record(name: String, ip: [u8; 4]) -> Self {
+        let rdata = ARecord { ip };
+
+        let rdata_packed = rdata.pack().expect("Packing A record failed");
+
+        ResourceRecord {
+            name,
+            record_type: QType::A,
+            record_class: QClass::In,
+            ttl: 120,
+            rdlength: rdata_packed
+                .len()
+                .try_into()
+                .expect("Could not cast usize to u16"),
+            rdata: Some(Box::new(rdata)),
+        }
+    }
+
+    pub fn create_aaaa_record(name: String, ip: [u16; 4]) -> Self {
+        let rdata = AAAARecord { ip };
+
+        let rdata_packed = rdata.pack().expect("Packing AAAA record failed");
+
+        ResourceRecord {
+            name,
+            record_type: QType::Aaaa,
+            record_class: QClass::In,
+            ttl: 120,
+            rdlength: rdata_packed
+                .len()
+                .try_into()
+                .expect("Could not cast usize to u16"),
+            rdata: Some(Box::new(rdata)),
+        }
+    }
+
+    pub fn create_ptr_record(name: String) -> Self {
+        let rdata = PTRRecord { name: name.clone() };
+
+        let rdata_packed = rdata.to_bytes();
+
+        ResourceRecord {
+            name,
+            record_type: QType::Ptr,
+            record_class: QClass::In,
+            ttl: 120,
+            rdlength: rdata_packed
+                .len()
+                .try_into()
+                .expect("Could not cast usize to u16"),
+            rdata: Some(Box::new(rdata)),
+        }
+    }
+
+    pub fn create_srv_record(
+        service: String,
+        protocol: String,
+        ttl: u32,
+        port: u16,
+        domain: String,
+    ) -> Self {
+        let rdata = SRVRecord {
+            service,
+            proto: protocol,
+            priority: 0,
+            ttl,
+            class: QClass::In,
+            port: 0,
+            weight: 0,
+            name: domain,
+        };
+
+        let rdata_packed = rdata.to_bytes();
+
+        ResourceRecord {
+            name: service,
+            record_type: QType::Ptr,
+            record_class: QClass::In,
+            ttl: 120,
+            rdlength: rdata_packed
+                .len()
+                .try_into()
+                .expect("Could not cast usize to u16"),
+            rdata: Some(Box::new(rdata)),
+        }
+    }
+}
+
 /// RData Trait
 ///
 /// Trait describing functions for the RData field of a Resource Record
 /// Allows for packing and unpacking byte arrays in and from Resource Records
 pub trait RData {
-    fn pack(&self) {}
+    fn to_bytes(&self) -> Vec<u8>;
 
-    fn unpack(&self) {}
+    fn parse(&self) -> Option<Box<dyn RData + Send>>;
 }
 
 ///TODO TEST THIS

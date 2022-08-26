@@ -1,3 +1,5 @@
+use crate::record::RData;
+
 /// PTR Resource Record
 ///
 ///
@@ -8,4 +10,14 @@ pub struct PTRRecord {
     //Name     A <domain-name> which points to some location in the domain name space
     //         Requires no additional record processing
     pub name: String,
+}
+
+impl RData for PTRRecord {
+    fn to_bytes(&self) -> Vec<u8> {
+        vec![]
+    }
+
+    fn parse(&self) -> Option<Box<dyn RData + Send>> {
+        None
+    }
 }

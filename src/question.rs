@@ -103,6 +103,8 @@ pub enum QType {
     Aaaa = 28,
     // 33 a service record
     Srv = 33,
+    // 47 a NextSECurity record, used for authenticated denial of existence of records
+    Nsec = 47,
     // 252 A request for a transfer of an entire zone
     Axfr = 252,
     // * A request for all records

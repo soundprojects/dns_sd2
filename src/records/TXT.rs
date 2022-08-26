@@ -1,3 +1,4 @@
+use crate::record::RData;
 /// TXT Resource Record
 ///
 ///
@@ -8,4 +9,14 @@ pub struct TXTRecord {
     //TXT-RECORD    One or more <character-string>s
     //              Holds data in the form of `key=value`
     pub txt_record: Vec<String>,
+}
+
+impl RData for TXTRecord {
+    fn to_bytes(&self) -> Vec<u8> {
+        self.txt_record
+    }
+
+    fn parse(&self) -> Option<Box<dyn RData + Send>> {
+        None
+    }
 }

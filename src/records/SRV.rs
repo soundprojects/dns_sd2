@@ -1,5 +1,6 @@
 use crate::question::QClass;
 
+use crate::record::RData;
 /// SRV Resource Record
 ///
 ///
@@ -29,4 +30,14 @@ pub struct SRVRecord {
     pub port: u16,
     //Target   The domain name of the target host. There MUST be one or more address records for this name and this name
     //         cannot be an alias
+}
+
+impl RData for SRVRecord {
+    fn to_bytes(&self) -> Vec<u8> {
+        vec![]
+    }
+
+    fn parse(&self) -> Option<Box<dyn RData + Send>> {
+        None
+    }
 }
