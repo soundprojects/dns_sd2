@@ -48,10 +48,11 @@ use tokio::net::UdpSocket;
 //MULTICAST Constants
 const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 
-pub mod question;
 pub mod header;
 pub mod message;
+pub mod question;
 pub mod record;
+pub mod records;
 pub mod service;
 
 pub enum ServiceState {
@@ -226,11 +227,11 @@ pub fn is_reachable_ipv4(host_ip: &Ipv4Addr, host_subnet: &Ipv4Addr, source_ip: 
 /// Compares the host IP addresses with the available interface IP addresses
 ///
 /// [RFC6762 Section 11 - Source Address Check](https://www.rfc-editor.org/rfc/rfc6762#section-11)
-/// 
+///
 /// # Example
 ///
 /// `fd48:a12f:7b0c:3da8:0000:0000:0000:0000` and `fd48:a12f:7b0c:3da8:0000:0000:0000:abcd` should be in the same network if the subnet is the default 64 bit prefix
-/// 
+///
 /// subnet = `ffff:ffff:ffff:ffff:0000:0000:0000`
 ///  
 /// ```rust
@@ -243,24 +244,18 @@ pub fn is_reachable_ipv4(host_ip: &Ipv4Addr, host_subnet: &Ipv4Addr, source_ip: 
 ///
 /// assert!(!is_reachable_ipv6(&Ipv6Addr::new(0xfd48,0xa12f,0x7b0c,0x3da8,0,0,0,0), &Ipv6Addr::new(0xffff,0xffff,0xffff,0xffff,0,0,0,0), &Ipv6Addr::new(0xfd48,0xa12f,0x7b0c,0x3da9,0,0,0,0xabcd)));
 /// ```
-pub fn is_reachable_ipv6(
-    host_ip: &Ipv6Addr,
-    host_subnet: &Ipv6Addr,
-    source_ip: &Ipv6Addr,
-) -> bool {
-
+pub fn is_reachable_ipv6(host_ip: &Ipv6Addr, host_subnet: &Ipv6Addr, source_ip: &Ipv6Addr) -> bool {
     let host_network = host_ip
-    .octets()
-    .into_bitarray::<Msb0>()
-    .bitand(host_subnet.octets().into_bitarray());
+        .octets()
+        .into_bitarray::<Msb0>()
+        .bitand(host_subnet.octets().into_bitarray());
 
     let source_network = source_ip
-    .octets()
-    .into_bitarray::<Msb0>()
-    .bitand(host_subnet.octets().into_bitarray());
+        .octets()
+        .into_bitarray::<Msb0>()
+        .bitand(host_subnet.octets().into_bitarray());
 
     host_network == source_network
-
 }
 
 /// Compress Name
@@ -297,24 +292,6 @@ pub fn compress_name(_message: &BitArray) -> BitArray {
 ///
 /// TODO Clarify protocol procedures
 pub fn decompress_name() -> String {
-    todo!();
-}
-
-/// Update TTL
-///
-/// Update TTL Values for the given records
-///
-///
-/// [RFC1035 Section 10 - Resource Record TTL Values and Cache Coherency](https://www.rfc-editor.org/rfc/rfc6762#section-10)
-///
-/// Most DNS TTL are set to a 75 minute default
-/// Other responses where the host name is equal to the record name (A, AAAA, SRV) are set to 120 seconds
-/// When the TTL default is down by 80%, a new query is necessary
-///
-/// - Decrease TTL for each record by 1
-/// - Verify if TTL cache rules are met
-/// - Notify if new query is necessary
-pub fn update_ttl() -> io::Result<()> {
     todo!();
 }
 
