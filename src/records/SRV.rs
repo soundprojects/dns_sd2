@@ -36,8 +36,4 @@ impl RData for SRVRecord {
     fn to_bytes(&self) -> Vec<u8> {
         vec![]
     }
-
-    fn parse(&self) -> Option<Box<dyn RData + Send>> {
-        None
-    }
 }

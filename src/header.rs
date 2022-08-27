@@ -89,6 +89,12 @@ pub struct Header {
     pub arcount: u16,
 }
 
+impl Header{
+    pub fn to_bytes(&self) -> Vec<u8>{
+        self.pack().expect("Failed to pack Header").into()
+    }
+}
+
 ///OPCODE ENUMERATOR
 ///
 ///OPCODE    A four bit field that specifies kind of query in this message. This value is set by the originator of a query

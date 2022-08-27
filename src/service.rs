@@ -1,4 +1,4 @@
-use crate::{record::ResourceRecord, ServiceState};
+use crate::{record::ResourceRecord, ServiceState, create_socket, message::MdnsMessage};
 use std::io;
 
 /// MDNS Service Struct
@@ -49,4 +49,15 @@ impl MdnsBrowse {
     }
 
     pub fn query(&mut self) {}
+}
+
+
+#[tokio::test]
+pub async fn test_query(){
+
+    let udp_socket = create_socket().expect("Failed to create Socket");
+
+    let message = MdnsMessage::default();
+
+    
 }

@@ -61,8 +61,46 @@ pub struct ResourceRecord {
 }
 
 impl ResourceRecord {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        vec![]
+    pub fn to_bytes(&self) -> Result<Vec<u8>, String> {
+
+        //If there is no RDATA set return Error
+        if let Some(rdata) = &self.rdata{
+        
+
+        let mut bytes = vec![];
+
+        //NAME
+        bytes.extend(self.name.as_bytes());
+
+        //Name is terminated by a zero length Octet
+        //[RFC1035 Section 4.1.2 - Question section format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.2)
+        bytes.push(0);
+
+        //TYPE
+        bytes.extend((self.record_type as u16).to_be_bytes());
+
+        //CLASS
+        bytes.extend((self.record_class as u16).to_be_bytes());
+
+        //TTL
+        bytes.extend(self.ttl.to_be_bytes());
+
+        //Retrieve the RData as bytes
+        let rdata_bytes = rdata.to_bytes();
+        let rdata_length = rdata_bytes.len() as u16;
+
+        //RDLENGTH
+        bytes.extend(rdata_length.to_be_bytes());
+
+        //RDATA
+        bytes.extend(rdata_bytes);
+
+        Ok(bytes)
+        }
+        else{
+        return Err("No RDATA set for this record".to_string());
+        }
+        
     }
 
     pub fn create_a_record(name: String, ip: [u8; 4]) -> Self {
@@ -110,7 +148,7 @@ impl ResourceRecord {
             name,
             record_type: QType::Ptr,
             record_class: QClass::In,
-            ttl: 120,
+            ttl: 4500,
             rdlength: rdata_packed
                 .len()
                 .try_into()
@@ -127,12 +165,12 @@ impl ResourceRecord {
         domain: String,
     ) -> Self {
         let rdata = SRVRecord {
-            service,
+            service: service.clone(),
             proto: protocol,
             priority: 0,
             ttl,
             class: QClass::In,
-            port: 0,
+            port: port,
             weight: 0,
             name: domain,
         };
@@ -156,11 +194,9 @@ impl ResourceRecord {
 /// RData Trait
 ///
 /// Trait describing functions for the RData field of a Resource Record
-/// Allows for packing and unpacking byte arrays in and from Resource Records
+/// Allows for packing byte arrays from Resource Record Data
 pub trait RData {
     fn to_bytes(&self) -> Vec<u8>;
-
-    fn parse(&self) -> Option<Box<dyn RData + Send>>;
 }
 
 ///TODO TEST THIS

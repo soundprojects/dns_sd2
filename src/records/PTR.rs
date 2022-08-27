@@ -14,10 +14,6 @@ pub struct PTRRecord {
 
 impl RData for PTRRecord {
     fn to_bytes(&self) -> Vec<u8> {
-        vec![]
-    }
-
-    fn parse(&self) -> Option<Box<dyn RData + Send>> {
-        None
+       self.name.as_bytes().to_vec()
     }
 }

@@ -167,6 +167,47 @@ pub async fn handle_response(_response: &MdnsMessage) -> io::Result<()> {
 /// UTILITY FUNCTIONS
 //
 
+
+/// Create Multicast Socket
+/// 
+/// Creates a Udp Ipv4 Multicast socket and binds it to the wildcard 0.0.0.0 address
+pub fn create_socket() -> io::Result<UdpSocket>{
+    //Create a udp ip4 socket
+    let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
+
+    //Allow this port to be reused by other sockets
+    socket.set_reuse_address(true)?;
+
+    //Create IPV4 any adress
+    let address = SocketAddrV4::new(IP_ANY.into(), 5353);
+
+    debug!("Created Address");
+
+    //Bind to wildcard 0.0.0.0
+    socket.bind(&SockAddr::from(address))?;
+
+    debug!("Bound Socket");
+
+    //Join multicast group
+    socket.join_multicast_v4(&Ipv4Addr::new(224, 0, 0, 51), address.ip())?;
+
+    info!("Joined Multicast");
+
+    //Convert to std::net udp socket
+    let udp_std_socket: std::net::UdpSocket = socket.into();
+
+    //Convert to tokio udp socket
+    let udp_socket = UdpSocket::from_std(udp_std_socket)?;
+
+    info!(
+        "Created a UDP Socket at {}, {}",
+        address.ip().to_string(),
+        address.port().to_string()
+    );
+
+    return Ok(udp_socket);
+}
+
 /// Is Reachable Ipv4
 ///
 /// Determine whether a query host is reachable
@@ -396,38 +437,7 @@ pub async fn something() -> io::Result<()> {
 
     info!("Running something");
 
-    //Create a udp ip4 socket
-    let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
-
-    //Allow this port to be reused by other sockets
-    socket.set_reuse_address(true)?;
-
-    //Create IPV4 any adress
-    let address = SocketAddrV4::new(IP_ANY.into(), 5353);
-
-    debug!("Created Address");
-
-    //Bind to wildcard 0.0.0.0
-    socket.bind(&SockAddr::from(address))?;
-
-    debug!("Bound Socket");
-
-    //Join multicast group
-    socket.join_multicast_v4(&Ipv4Addr::new(224, 0, 0, 51), address.ip())?;
-
-    info!("Joined Multicast");
-
-    //Convert to std::net udp socket
-    let udp_std_socket: std::net::UdpSocket = socket.into();
-
-    //Convert to tokio udp socket
-    let _udp_socket = UdpSocket::from_std(udp_std_socket)?;
-
-    info!(
-        "Created a UDP Socket at {}, {}",
-        address.ip().to_string(),
-        address.port().to_string()
-    );
+    let _udp_socket = create_socket();
 
     //Spawn task for listening to messages
 

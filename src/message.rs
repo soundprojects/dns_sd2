@@ -40,3 +40,40 @@ pub struct MdnsMessage {
     //                  To prevent unnecessary latency and extra querying for the querier
     pub additionals: Vec<ResourceRecord>,
 }
+
+
+impl MdnsMessage{
+
+    pub fn to_bytes(&self) -> Vec<u8>{
+
+        let mut bytes: Vec<u8> = vec![];
+
+        //HEADER
+        bytes.extend(self.header.to_bytes());
+
+        //QUESTIONS
+        for question in &self.questions{
+            bytes.extend(question.to_bytes());
+        }
+
+        //Answers
+        for answer in &self.answers{
+            if let Ok(record) = answer.to_bytes(){
+            bytes.extend(record)}
+        }
+
+        //Authorities
+        for authority in &self.authorities{
+            if let Ok(record) = authority.to_bytes(){
+            bytes.extend(record)}
+        }
+
+        //Additionals
+        for additional in &self.additionals{
+            if let Ok(record) = additional.to_bytes(){
+            bytes.extend(record)}
+        }
+
+        bytes
+    }
+}

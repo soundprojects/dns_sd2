@@ -31,6 +31,26 @@ pub struct Question {
     pub qclass: QClass,
 }
 
+impl Question{
+    pub fn to_bytes(&self) -> Vec<u8>{
+        let mut bytes = vec![];
+
+        //NAME
+        bytes.extend(self.name.as_bytes());
+
+        //Name is terminated by a zero octet
+        bytes.push(0);
+
+        //TYPE
+        bytes.extend((self.qtype as u16).to_be_bytes());
+
+        //CLASS
+        bytes.extend((self.qclass as u16).to_be_bytes());
+
+        bytes
+    }
+}
+
 /// DNS QClass
 ///
 /// QClass defines what network class the question is asking for

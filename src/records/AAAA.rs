@@ -20,8 +20,4 @@ impl RData for AAAARecord {
     fn to_bytes(&self) -> Vec<u8> {
         self.pack().expect("Failed to pack AAAA record").into()
     }
-
-    fn parse(&self) -> Option<Box<dyn RData + Send>> {
-        None
-    }
 }
