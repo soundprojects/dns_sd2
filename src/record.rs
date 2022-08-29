@@ -176,7 +176,6 @@ impl ResourceRecord {
         };
 
         let rdata_packed = rdata.to_bytes();
-
         ResourceRecord {
             name: service,
             record_type: QType::Ptr,

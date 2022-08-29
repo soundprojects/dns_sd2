@@ -101,7 +101,7 @@ pub async fn check_unique_responder() -> Result<(), MdnsError> {
     let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
 
     //Do not allow this port to be reused by other sockets to test if socket is already bound to
-    socket.set_reuse_address(false)?;
+    socket.set_reuse_port(false)?;
 
     //Create IPV4 any adress
     let address = SocketAddrV4::new(IP_ANY.into(), 5353);
@@ -167,16 +167,17 @@ pub async fn handle_response(_response: &MdnsMessage) -> io::Result<()> {
 /// UTILITY FUNCTIONS
 //
 
-
 /// Create Multicast Socket
-/// 
+///
 /// Creates a Udp Ipv4 Multicast socket and binds it to the wildcard 0.0.0.0 address
-pub fn create_socket() -> io::Result<UdpSocket>{
+pub fn create_socket() -> io::Result<UdpSocket> {
     //Create a udp ip4 socket
     let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
 
     //Allow this port to be reused by other sockets
     socket.set_reuse_address(true)?;
+    socket.set_reuse_port(true)?;
+    socket.set_nonblocking(true)?;
 
     //Create IPV4 any adress
     let address = SocketAddrV4::new(IP_ANY.into(), 5353);

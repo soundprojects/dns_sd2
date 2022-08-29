@@ -17,7 +17,7 @@ repository = "https://github.com/soundprojects/dns_sd2"
 bitvec = "1.0.1"
 if-addrs = "0.7.0"
 log = "0.4"
-packed_struct="0.10.0"
+packed_struct = "0.10.0"
 pretty_env_logger = "0.4"
 rand = "0.8.5"
 socket2 = "0.4.4"
@@ -28,3 +28,4 @@ tokio = { version = "1.20.1", features = [
     "rt-multi-thread",
     "macros",
 ] }
+tokio-util = { version = "0.7.3", features = ["net", "codec"] }

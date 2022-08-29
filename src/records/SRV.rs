@@ -34,6 +34,11 @@ pub struct SRVRecord {
 
 impl RData for SRVRecord {
     fn to_bytes(&self) -> Vec<u8> {
-        vec![]
+        let mut bytes: Vec<u8> = vec![];
+
+        bytes.push(self.service.len() as u8);
+        bytes.extend(self.service.as_bytes());
+
+        bytes
     }
 }

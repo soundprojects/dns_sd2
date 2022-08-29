@@ -1,4 +1,4 @@
-use crate::{question::Question, header::Header, record::ResourceRecord};
+use crate::{header::Header, question::Question, record::ResourceRecord};
 
 /// MDNS Message
 ///
@@ -10,6 +10,14 @@ use crate::{question::Question, header::Header, record::ResourceRecord};
 /// See linked files for information about the content
 ///
 /// [1035 Section 4.1 - Format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1)
+///
+/// ## Example
+///
+/// ```
+/// use dns_sd2::message::MdnsMessage;
+///
+///
+/// ```
 #[derive(Default, Debug)]
 pub struct MdnsMessage {
     //Header        See Header.rs
@@ -41,37 +49,37 @@ pub struct MdnsMessage {
     pub additionals: Vec<ResourceRecord>,
 }
 
-
-impl MdnsMessage{
-
-    pub fn to_bytes(&self) -> Vec<u8>{
-
+impl MdnsMessage {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = vec![];
 
         //HEADER
         bytes.extend(self.header.to_bytes());
 
         //QUESTIONS
-        for question in &self.questions{
+        for question in &self.questions {
             bytes.extend(question.to_bytes());
         }
 
-        //Answers
-        for answer in &self.answers{
-            if let Ok(record) = answer.to_bytes(){
-            bytes.extend(record)}
+        //ANSWERS
+        for answer in &self.answers {
+            if let Ok(record) = answer.to_bytes() {
+                bytes.extend(record)
+            }
         }
 
-        //Authorities
-        for authority in &self.authorities{
-            if let Ok(record) = authority.to_bytes(){
-            bytes.extend(record)}
+        //AUTHORITIES
+        for authority in &self.authorities {
+            if let Ok(record) = authority.to_bytes() {
+                bytes.extend(record)
+            }
         }
 
-        //Additionals
-        for additional in &self.additionals{
-            if let Ok(record) = additional.to_bytes(){
-            bytes.extend(record)}
+        //ADDITONALS
+        for additional in &self.additionals {
+            if let Ok(record) = additional.to_bytes() {
+                bytes.extend(record)
+            }
         }
 
         bytes

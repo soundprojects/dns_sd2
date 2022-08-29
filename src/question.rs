@@ -28,16 +28,24 @@ pub struct Question {
     //Type     Defines what type of resource the question is asking for
     pub qtype: QType,
     //Class     Defines what network class the question is asking for
+    //          Multicast DNS defines the top bit in the class field of a DNS
+    //          question as the unicast-response bit
+    //
+    //          [RFC6762 Section 5.4 - Questions Requesting Unicast Responses](https://www.rfc-editor.org/rfc/rfc6762#section-5.4)
     pub qclass: QClass,
 }
 
-impl Question{
-    pub fn to_bytes(&self) -> Vec<u8>{
-        let mut bytes = vec![];
+impl Question {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes: Vec<u8> = vec![];
 
         //NAME
-        bytes.extend(self.name.as_bytes());
+        let labels = self.name.split('.');
 
+        for label in labels {
+            bytes.push(label.len() as u8);
+            bytes.extend(label.as_bytes());
+        }
         //Name is terminated by a zero octet
         bytes.push(0);
 
@@ -58,6 +66,10 @@ impl Question{
 /// QClass are a superset of Class, so all Class are valid QClass
 ///
 /// This field is used in Queries and Resource Records
+///
+/// When used in Query, the top bit indicates whether this is a Multicast or Unicast Query
+///
+/// [RFC6762 Section 5.4 - Questions Requesting Unicast Responses](https://www.rfc-editor.org/rfc/rfc6762#section-5.4)
 ///
 /// [RFC1035 Section 3.2.5 - CLASS Values](https://www.rfc-editor.org/rfc/rfc1035#section-3.2.5)
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
