@@ -21,28 +21,37 @@ use std::{
     io,
     net::{Ipv4Addr, Ipv6Addr, SocketAddrV4},
     ops::BitAnd,
+    time::Duration,
 };
 
-use bitvec::{
-    prelude::{BitArray, Msb0},
-    view::BitViewSized,
-};
+use bitvec::{prelude::Msb0, view::BitViewSized};
+use futures::{stream::FuturesUnordered, StreamExt};
 use message::MdnsMessage;
-use rand::Rng;
+use protocols::handler::{Event, Handler};
+
+use record::ResourceRecord;
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 use thiserror::Error;
-use tokio::net::UdpSocket;
+use tokio::{
+    net::UdpSocket,
+    select,
+    sync::mpsc::{unbounded_channel, UnboundedSender},
+    time::interval,
+};
+use tokio_util::{codec::BytesCodec, udp::UdpFramed};
+
+use crate::protocols::probe::ProbeHandler;
 
 //MULTICAST Constants
 const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 
 pub mod header;
 pub mod message;
+pub mod protocols;
 pub mod question;
 pub mod record;
 pub mod records;
-pub mod service;
 
 pub enum ServiceState {
     Prelude,
@@ -50,6 +59,12 @@ pub enum ServiceState {
     Announcing,
     Registered,
     ShuttingDown,
+}
+
+impl Default for ServiceState {
+    fn default() -> Self {
+        ServiceState::Probing
+    }
 }
 
 #[derive(Debug, Error)]
@@ -112,56 +127,6 @@ pub async fn check_unique_responder() -> Result<(), MdnsError> {
     debug!("Responder is unique!");
 
     Ok(())
-}
-
-/// Handle Query
-///
-/// When a query is received on the interface, it is handled through this function
-///
-/// - Determine if caches need to be flushed (with 1s timeout)
-///
-/// [RFC6762 Section 10.2 - Announcements to Flush Outdated Cache Entries](https://www.rfc-editor.org/rfc/rfc6762#section-10.2)
-///
-/// - Determine if this query is a query we are preparing ourselves
-///
-/// [RFC6762 Section 7.3 - Duplicate Question Supression](https://www.rfc-editor.org/rfc/rfc6762#section-7.3)
-///
-/// - Determine if there is passive failure (lack of response after this query where we would have expected it)
-
-pub async fn handle_query(_query: &MdnsMessage) -> io::Result<()> {
-    todo!();
-}
-
-/// Handle Response
-///
-/// When a response is received on the interface, it is handled through this function
-///
-/// - Determine if this message is truncated
-/// - Defer response by 400-500 ms to allow for more known answers to be received
-///
-/// [RFC6762 Section 7.2 - Multicast Known Answer Supression](https://www.rfc-editor.org/rfc/rfc6762#section-7.2)
-///
-/// - Determine if TTL of known answers is less than half of the correct TTL -> do not include record
-///
-/// [RFC6762 Section 7.1 - Multicast Known Answer Supression](https://www.rfc-editor.org/rfc/rfc6762#section-7.2)
-///
-/// - Determine if caches need to be flushed (with 1s timeout)
-///
-/// [RFC6762 Section 10.2 - Announcements to Flush Outdated Cache Entries](https://www.rfc-editor.org/rfc/rfc6762#section-10.2)
-///
-/// - Determine if this is a goodbye packet (TTL of 0)
-/// - Set TTL to 1 so service is removed after 1 second
-///
-/// [RFC6762 Section 10.1 - Goodbye Packets](https://www.rfc-editor.org/rfc/rfc6762#section-10.1)
-///
-/// - Determine if this is an update or a possible conflict
-///
-/// - Determine if this is a response we are preparing ourselves
-///
-/// [RFC6762 Section 7.4 - Duplicate Answer Supression](https://www.rfc-editor.org/rfc/rfc6762#section-7.4)
-
-pub async fn handle_response(_response: &MdnsMessage) -> io::Result<()> {
-    todo!();
 }
 
 /// UTILITY FUNCTIONS
@@ -289,43 +254,6 @@ pub fn is_reachable_ipv6(host_ip: &Ipv6Addr, host_subnet: &Ipv6Addr, source_ip: 
     host_network == source_network
 }
 
-/// Compress Name
-///
-/// Message compression for optimizing MDNS Records
-///
-/// This compression means that names which are repeated in records are replaced by a pointer
-/// to the first place where this name appears. The pointer is an octet which has the first two bits set, followed
-/// by the offset indicating the place where we can find the original name
-///
-/// Labels start with the first two bits set to zero
-///
-/// Compression is only applied to RR where the format is specified:
-/// CNAME NS MX A AAAA PTR
-///
-/// Name compression SHOULD NOT be applied to SRV Records
-///
-/// [RFC6762 Section 18.14 - Name Compression](https://www.rfc-editor.org/rfc/rfc6762#section-18.14)
-///
-/// [RFC1035 Section 4.1.4 - Message Compression](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4)
-///
-/// Split the domain into parts and calculate lengths per label
-pub fn compress_name(_message: &BitArray) -> BitArray {
-    todo!();
-}
-
-/// Decompress Name
-///
-/// Message decompression for optimizing MDNS Records
-///
-/// [RFC6762 Section 18.14 - Name Compression](https://www.rfc-editor.org/rfc/rfc6762#section-18.14)
-///
-/// [RFC1035 Section 4.1.4 - Message Compression](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4)
-///
-/// TODO Clarify protocol procedures
-pub fn decompress_name() -> String {
-    todo!();
-}
-
 /// Lexicographic Comparison
 ///
 /// Compares two records for which is lexicographically 'later'
@@ -335,116 +263,123 @@ pub fn decompress_name() -> String {
 /// TODO Clarify protocol procedures
 // Impl Ord for Service{}
 
-/// PROBING AND ANNOUNCING FUNCTIONS
-//
-
-/// Probe MDNS Service
-///
-/// First step in MDNS announcement protocol
-///
-/// This step is only available if MdnsResolver state is `State::Probing`
-///
-/// [RFC6762 Section 8.1 - Probing](https://www.rfc-editor.org/rfc/rfc6762#section-8.1)
-/// - Wait for a 0-250ms time period to prevent simultaneous querying by devices on startup
-/// - Query the service
-/// - Wait for 250ms or get a response -> Return Conflict Error
-/// - Query again
-/// - Wait for 250ms or get a response -> Return Conflict Error
-/// - Return Ok -> Service has not been registrered
-pub async fn probe() -> io::Result<()> {
-    let random_delay = rand::thread_rng().gen_range(0..250);
-    tokio::time::sleep(std::time::Duration::from_millis(random_delay)).await;
-
-    //TODO Query the service
-
-    //TODO Select statement with receiving and parsing / timer
-    tokio::time::sleep(std::time::Duration::from_millis(250)).await;
-
-    //TODO Select statement with receiving and parsing / timer
-    tokio::time::sleep(std::time::Duration::from_millis(250)).await;
-
-    Ok(())
+#[derive(Default)]
+pub struct Service {
+    name: String,
+    txt_records: Vec<String>,
+    timeout: u64,
+    state: ServiceState,
 }
 
-/// Probe Tiebreak
-///
-/// Resolve conflict in case of probe response by others
-///
-/// This step is only available if MdnsResolver state is `State::Probing`
-///
-/// [RFC6762 Section 8.2 - Simultaneous Probe Tiebreak](https://www.rfc-editor.org/rfc/rfc6762#section-8.2)
-/// - Compare two services by lexicographic greatness
-/// - If greater, return `Ok(())`, else return `Error::ServiceOccupied`
-/// - If we return an error, Resolver should wait 1s and restart probing
-pub async fn probe_tiebreak() -> io::Result<()> {
-    //TODO
-
-    Ok(())
+#[derive(Default)]
+pub struct Query {
+    name: String,
+    timeout: u64,
 }
 
-/// Announce MDNS Service
-///
-/// Second step in MDNS announcement protocol
-///
-/// This step is only available if MdnsResolver state is `State::Announcing`
-///
-/// [RFC6762 Section 8.3 - Announcing](https://www.rfc-editor.org/rfc/rfc6762#section-8.3)
-/// - Send unsollicited response with all answers, both shared and unique
-/// - For the unique records, set cache flush bit to '1'
-/// - Wait 1s
-/// - Send unsollicited response again
-pub async fn announce() -> io::Result<()> {
-    let random_delay = rand::thread_rng().gen_range(0..250);
-    tokio::time::sleep(std::time::Duration::from_millis(random_delay)).await;
-
-    //TODO Send unsollicited response
-
-    //TODO Select statement with receiving and parsing / timer
-    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-
-    //TODO Send unsollicited response
-
-    Ok(())
+#[derive(Default)]
+pub struct DnsSd2 {
+    records: Vec<ResourceRecord>,
+    registrations: Vec<Service>,
+    queries: Vec<Query>,
+    tx: Option<UnboundedSender<Event>>,
 }
 
-///SHUTDOWN FUNCTIONS
-//
+impl<'a> DnsSd2 {
+    pub fn handle<T: Handler<'a>>(&mut self, h: &T, event: &Event, timeouts: &mut Vec<u64>) {
+        h.handle(
+            event,
+            &mut self.records,
+            &mut self.registrations,
+            &mut self.queries,
+            timeouts,
+        )
+    }
 
-/// Send Goodbye Packets
-///
-/// Last step in MDNS shutdown protocol
-///
-/// When a service is dropped, send a goodbye record so other hosts know this service is gone
-///
-/// This step is only available if MdnsResolver state is `State::ShuttingDown`
-///
-/// [RFC6762 Section 10.1 - Goodbye Packets](https://www.rfc-editor.org/rfc/rfc6762#section-10.1)
-/// - Send unsollicited response with a TTL of 0
-pub async fn goodbye() -> io::Result<()> {
-    todo!();
+    pub fn register(&mut self, name: String, txt_records: Vec<String>) {
+        debug!("register");
+        self.tx
+            .as_ref()
+            .unwrap()
+            .send(Event::Register(name, txt_records))
+            .expect("Failed to send with Tx");
+    }
+    /// Init
+    ///
+    /// Called by Client after creating a Dns_Sd2 Struct
+    ///
+    /// This starts the main event loop for the library and builds the chain of responsibility
+    ///
+    /// A select! loop picks between a 1s Interval Stream, a dynamic interval stream set by the chain and the UdpFramed Stream
+    ///
+    ///
+    /// Creates a UDP IP4 Socket and binds to the 'any' 0.0.0.0 interface
+    ///
+    /// Allows the port to be reused
+    ///
+    /// Connect to Multicast group
+    ///
+    /// [DNS Specification](https://www.rfc-editor.org/rfc/rfc6762#section-8.1)
+    pub async fn init(&mut self) -> io::Result<()> {
+        pretty_env_logger::init_timed();
+
+        info!("Initializing Event Loop");
+
+        //Channel
+        let (tx, mut rx) = unbounded_channel();
+
+        self.tx = Some(tx);
+
+        //Socket
+        let udp_socket = create_socket().expect("Failed to create socket");
+
+        let mut frame = UdpFramed::new(udp_socket, BytesCodec::new());
+
+        //Chain of responsibility
+        let probe = ProbeHandler::default();
+
+        //Collection of timer futures
+        let mut dynamic_interval = FuturesUnordered::new();
+
+        dynamic_interval.push(sleep_for(2000));
+
+        //Normal 1s TTL Timer
+        let mut interval = interval(Duration::from_secs(1));
+
+        loop {
+            let result = select! {
+                _ = frame.next() => {
+                    Event::Message(MdnsMessage::default())
+                }
+                c = rx.recv() => {
+                    debug!("{:?}", c);
+                    c.expect("Should contain an Event")
+                }
+                t = dynamic_interval.next(), if !dynamic_interval.is_empty() => {
+                    debug!("Timed out for {:?} ms", t);
+                    Event::TimeElapsed(t.unwrap_or_default())
+                }
+                _ = interval.tick() => {
+                    debug!("Tick");
+                    Event::TimeElapsed(1000)
+
+                }
+            };
+
+            let mut timeouts = vec![];
+
+            //Execute the chain
+            self.handle(&probe, &result, &mut timeouts);
+
+            //Add the resulting timeouts from the chain to our dynamic interval futures
+            for timeout in timeouts {
+                dynamic_interval.push(sleep_for(timeout));
+            }
+        }
+    }
 }
 
-/// Something
-///
-/// Creates a UDP IP4 Socket and binds to the 'any' 0.0.0.0 interface
-///
-/// Allows the port to be reused
-///
-/// Connect to Multicast group
-///
-/// [DNS Specification](https://www.rfc-editor.org/rfc/rfc6762#section-8.1)
-pub async fn something() -> io::Result<()> {
-    pretty_env_logger::init_timed();
-
-    info!("Running something");
-
-    let _udp_socket = create_socket();
-
-    //Spawn task for listening to messages
-
-    //Send first probing
-
-    debug!("Ready to probe");
-
-    Ok(())
+async fn sleep_for(duration: u64) -> u64 {
+    tokio::time::sleep(Duration::from_millis(duration)).await;
+    duration
 }
