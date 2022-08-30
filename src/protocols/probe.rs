@@ -1,7 +1,6 @@
-use crate::{record::ResourceRecord, Service, Query};
+use crate::{record::ResourceRecord, Query, Service};
 
-use super::handler::{Handler, Event};
-
+use super::handler::{Event, Handler};
 
 /// Probe MDNS Service
 ///
@@ -16,7 +15,7 @@ use super::handler::{Handler, Event};
 /// - Query again
 /// - Wait for 250ms or get a response -> Return Conflict Error
 /// - Return Ok -> Service has not been registrered
-/// 
+///
 #[derive(Default, Copy, Clone)]
 pub struct ProbeHandler<'a> {
     next: Option<&'a dyn Handler<'a>>,
@@ -27,14 +26,24 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
         self.next = Some(next);
         self
     }
-    fn handle(&self, event: &Event, records: &mut Vec<ResourceRecord>, registrations: &mut Vec<Service>, searches: &mut Vec<Query>, timeouts: &mut Vec<u64>) {
-        
-        match event{
-            Event::TimeElapsed(a) => if *a == 1000 as u64{timeouts.push(100);},
+    fn handle(
+        &self,
+        event: &Event,
+        records: &mut Vec<ResourceRecord>,
+        registration: &mut Option<Service>,
+        query: &mut Option<Query>,
+        timeouts: &mut Vec<u64>,
+    ) {
+        match event {
+            Event::TimeElapsed(a) => {
+                if *a == 1000 as u64 {
+                    timeouts.push(100);
+                }
+            }
             _ => {}
         }
         if let Some(v) = &self.next {
-            v.handle(event, records, registrations, searches, timeouts);
+            v.handle(event, records, registration, query, timeouts);
         }
     }
 }

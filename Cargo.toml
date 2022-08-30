@@ -14,6 +14,7 @@ repository = "https://github.com/soundprojects/dns_sd2"
 
 
 [dependencies]
+async-stream = "0.3.3"
 bitvec = "1.0.1"
 futures = "0.3.23"
 if-addrs = "0.7.0"

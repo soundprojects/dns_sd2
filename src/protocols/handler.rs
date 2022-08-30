@@ -21,8 +21,8 @@ pub trait Handler<'a> {
         &self,
         event: &Event,
         records: &mut Vec<ResourceRecord>,
-        registrations: &mut Vec<Service>,
-        searches: &mut Vec<Query>,
+        registration: &mut Option<Service>,
+        query: &mut Option<Query>,
         timeouts: &mut Vec<u64>,
     );
 }
