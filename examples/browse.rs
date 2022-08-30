@@ -4,6 +4,8 @@ use log::debug;
 
 #[tokio::main]
 pub async fn main() {
+    pretty_env_logger::init_timed();
+
     let mut client = DnsSd2::default();
 
     let stream = client.browse("_services._udp.local".into()).await;
