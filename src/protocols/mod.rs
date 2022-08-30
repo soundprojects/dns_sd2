@@ -4,6 +4,7 @@ pub mod goodbye_packet;
 pub mod handler;
 pub mod known_answer_suppression;
 pub mod passive_failure_observance;
-pub mod probe_conflict;
 pub mod probe;
+pub mod probe_conflict;
+pub mod register;
 pub mod truncated;

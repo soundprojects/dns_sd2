@@ -18,7 +18,10 @@ use tokio::{
 };
 use tokio_util::{codec::BytesCodec, udp::UdpFramed};
 
-use crate::{protocols::probe::ProbeHandler, utility::create_socket};
+use crate::{
+    protocols::{probe::ProbeHandler, register::RegisterHandler},
+    utility::create_socket,
+};
 
 const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 
@@ -100,7 +103,7 @@ impl<'a> DnsSd2 {
         &mut self,
         name: String,
         txt_records: Vec<String>,
-    ) -> impl Stream<Item = Result<Service, String>> + '_ {
+    ) -> impl Stream<Item = Result<Service, MdnsError>> + '_ {
         debug!(
             "Register Service {} with TXT Records {:?}",
             name, txt_records
@@ -132,7 +135,7 @@ impl<'a> DnsSd2 {
     pub async fn browse(
         &mut self,
         name: String,
-    ) -> impl Stream<Item = Result<Service, String>> + '_ {
+    ) -> impl Stream<Item = Result<Service, MdnsError>> + '_ {
         debug!("Browse for Service {}", name);
 
         self.tx
@@ -149,9 +152,7 @@ impl<'a> DnsSd2 {
     /// A select! loop picks between a 1s Interval Stream, a dynamic interval stream set by the chain and the UdpFramed Stream
     ///
     /// Returns a stream for the requested Enum
-    pub async fn init(&mut self) -> impl Stream<Item = Result<Service, String>> + '_ {
-        pretty_env_logger::init_timed();
-
+    pub async fn init(&mut self) -> impl Stream<Item = Result<Service, MdnsError>> + '_ {
         info!("Initializing Event Loop");
 
         try_stream! {
@@ -161,12 +162,12 @@ impl<'a> DnsSd2 {
                 let mut frame = UdpFramed::new(udp_socket, BytesCodec::new());
 
                 //Chain of responsibility
+                let mut register = RegisterHandler::default();
                 let probe = ProbeHandler::default();
+                register.set_next(&probe);
 
                 //Collection of timer futures
-                let mut dynamic_interval = FuturesUnordered::new();
-
-                dynamic_interval.push(sleep_for(2000));
+                let mut timeouts = FuturesUnordered::new();
 
                 //Normal 1s TTL Timer
                 let mut interval = interval(Duration::from_secs(1));
@@ -182,25 +183,24 @@ impl<'a> DnsSd2 {
                             yield s;
                             c.expect("Should contain an Event")
                         }
-                        t = dynamic_interval.next(), if !dynamic_interval.is_empty() => {
+                        t = timeouts.next(), if !timeouts.is_empty() => {
                             debug!("Timed out for {:?} ms", t);
                             Event::TimeElapsed(t.unwrap_or_default())
                         }
                         _ = interval.tick() => {
-                            debug!("Tick");
                             Event::TimeElapsed(1000)
 
                         }
                     };
 
-                    let mut timeouts = vec![];
+                    let mut new_timeouts = vec![];
 
                     //Execute the chain
-                    self.handle(&probe, &result, &mut timeouts);
+                    self.handle(&register, &result, &mut new_timeouts);
 
                     //Add the resulting timeouts from the chain to our dynamic interval futures
-                    for timeout in timeouts {
-                        dynamic_interval.push(sleep_for(timeout));
+                    for timeout in new_timeouts {
+                        timeouts.push(sleep_for(timeout));
                     }
                 }
         }

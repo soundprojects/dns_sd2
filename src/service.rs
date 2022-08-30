@@ -1,9 +1,9 @@
 #[derive(Debug, Default)]
 pub struct Service {
-    _name: String,
-    _txt_records: Vec<String>,
-    _timeout: u64,
-    _state: ServiceState,
+    pub name: String,
+    pub txt_records: Vec<String>,
+    pub timeout: u64,
+    pub state: ServiceState,
 }
 
 #[derive(Default)]
@@ -23,6 +23,6 @@ pub enum ServiceState {
 
 impl Default for ServiceState {
     fn default() -> Self {
-        ServiceState::Probing
+        ServiceState::Prelude
     }
 }

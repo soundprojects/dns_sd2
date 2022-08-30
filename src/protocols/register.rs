@@ -1,4 +1,4 @@
-use crate::{record::ResourceRecord, service::ServiceState, Query, Service};
+use crate::{record::ResourceRecord, Query, Service};
 
 use super::handler::{Event, Handler};
 
@@ -17,11 +17,11 @@ use super::handler::{Event, Handler};
 /// - Return Ok -> Service has not been registrered
 ///
 #[derive(Default, Copy, Clone)]
-pub struct ProbeHandler<'a> {
+pub struct RegisterHandler<'a> {
     next: Option<&'a dyn Handler<'a>>,
 }
 
-impl<'a> Handler<'a> for ProbeHandler<'a> {
+impl<'a> Handler<'a> for RegisterHandler<'a> {
     fn set_next(&mut self, next: &'a dyn Handler<'a>) -> &mut dyn Handler<'a> {
         self.next = Some(next);
         self
@@ -34,14 +34,17 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
         query: &mut Option<Query>,
         timeouts: &mut Vec<u64>,
     ) {
-        if let Some(r) = registration {
-            match r.state {
-                ServiceState::Prelude => {
-                    debug!("Sending Probe Query for {}", r.name);
-                    r.state = ServiceState::Probing
-                }
-                _ => {}
+        match event {
+            Event::Register(n, t) => {
+                debug!("Added new Registration {} with txt_records {:?}", n, t);
+
+                *registration = Some(Service {
+                    name: n.to_string(),
+                    txt_records: t.to_vec(),
+                    ..Default::default()
+                });
             }
+            _ => {}
         }
         if let Some(v) = &self.next {
             v.handle(event, records, registration, query, timeouts);
