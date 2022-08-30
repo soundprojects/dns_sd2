@@ -162,9 +162,9 @@ impl<'a> DnsSd2 {
                 let mut frame = UdpFramed::new(udp_socket, BytesCodec::new());
 
                 //Chain of responsibility
-                let mut register = RegisterHandler::default();
-                let probe = ProbeHandler::default();
-                register.set_next(&probe);
+                let mut register_handler = RegisterHandler::default();
+                let probe_handler = ProbeHandler::default();
+                register_handler.set_next(&probe_handler);
 
                 //Collection of timer futures
                 let mut timeouts = FuturesUnordered::new();
@@ -196,7 +196,7 @@ impl<'a> DnsSd2 {
                     let mut new_timeouts = vec![];
 
                     //Execute the chain
-                    self.handle(&register, &result, &mut new_timeouts);
+                    self.handle(&register_handler, &result, &mut new_timeouts);
 
                     //Add the resulting timeouts from the chain to our dynamic interval futures
                     for timeout in new_timeouts {
