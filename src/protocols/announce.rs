@@ -6,9 +6,10 @@ use super::handler::{Event, Handler};
 ///
 /// Second step in MDNS announcement protocol
 ///
-/// This step is only available if MdnsResolver state is `State::Announcing`
+/// ## RFC Reference
+/// - [RFC6762 Section 8.3 - Announcing](https://www.rfc-editor.org/rfc/rfc6762#section-8.3)
 ///
-/// [RFC6762 Section 8.3 - Announcing](https://www.rfc-editor.org/rfc/rfc6762#section-8.3)
+/// ## Protocol
 /// - Send unsollicited response with all answers, both shared and unique
 /// - For the unique records, set cache flush bit to '1'
 /// - Wait 1s

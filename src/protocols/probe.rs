@@ -8,7 +8,11 @@ use rand::{thread_rng, Rng};
 ///
 /// This step is only available if MdnsResolver state is `State::Probing`
 ///
-/// [RFC6762 Section 8.1 - Probing](https://www.rfc-editor.org/rfc/rfc6762#section-8.1)
+///
+/// ## RFC Reference
+/// - [RFC6762 Section 8.1 - Probing](https://www.rfc-editor.org/rfc/rfc6762#section-8.1)
+///
+/// ## Protocol
 /// - Wait for a 0-250ms time period to prevent simultaneous querying by devices on startup
 /// - Query the service
 /// - Wait for 250ms or get a response -> Return Conflict Error

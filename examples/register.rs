@@ -14,7 +14,7 @@ pub async fn main() {
 
     pin_mut!(stream);
 
-    // while let Some(Ok(s)) = stream.next().await {
-    //     debug!("Registered a Service {:?}", s);
-    // }
+    while let Some(Ok(s)) = stream.next().await {
+        debug!("Registered a Service {:?}", s);
+    }
 }

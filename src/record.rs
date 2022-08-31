@@ -6,9 +6,13 @@ use crate::{
 };
 use std::fmt::Debug;
 
-/// [RFC1035 Section 4.1.3 - Resource record format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.3)
-///                                 1  1  1  1  1  1
-///   0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
+/// A Record describing a certain [`QClass`] and [`QType`]
+///
+///## RFC Reference
+/// - [RFC1035 Section 4.1.3 - Resource record format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.3)
+///
+/// ## Bit Layout
+/// ```no_run
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 /// |                                               |
 /// /                                               /
@@ -27,6 +31,7 @@ use std::fmt::Debug;
 /// /                     RDATA                     /
 /// /                                               /
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+/// ```
 #[derive(Debug)]
 pub struct ResourceRecord {
     //NAME      a domain name to which this record pertains

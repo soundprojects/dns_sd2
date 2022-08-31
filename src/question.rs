@@ -3,9 +3,9 @@
 ///
 ///## RFC Reference
 /// [RFC1035 Section 4.1.2 - Question section format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.2)
+///
+/// ## Bit Layout
 /// ```no_run
-///                                 1  1  1  1  1  1
-///   0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 /// |                                               |
 /// /                     QNAME                     /

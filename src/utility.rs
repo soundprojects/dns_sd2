@@ -15,10 +15,13 @@ use crate::{MdnsError, IP_ANY};
 /// This may prevents us from receiving unicast UDP Messages
 ///
 ///
-/// [RFC6762 Section 15.1 - Receiving Unicast Responses](https://www.rfc-editor.org/rfc/rfc6762#section-15.1)
+/// ## RFC Reference
+/// - [RFC6762 Section 15.1 - Receiving Unicast Responses](https://www.rfc-editor.org/rfc/rfc6762#section-15.1)
+///
+/// ## Protocol
 /// - Attempt to bind a UDP Socket to port 5353 without setting REUSE_ADDR
 /// - If this fails, this means another program is already using this port
-/// - Return Error:PortNotAvailable
+/// - Return [`MdnsError::AddressAlreadyTaken`]
 ///
 /// # Example
 ///
@@ -146,11 +149,14 @@ pub fn is_reachable_ipv4(host_ip: &Ipv4Addr, host_subnet: &Ipv4Addr, source_ip: 
 ///
 /// Compares the host IP addresses with the available interface IP addresses
 ///
-/// [RFC6762 Section 11 - Source Address Check](https://www.rfc-editor.org/rfc/rfc6762#section-11)
+/// ## RFC Reference
+/// -[RFC6762 Section 11 - Source Address Check](https://www.rfc-editor.org/rfc/rfc6762#section-11)
 ///
 /// # Example
 ///
-/// `fd48:a12f:7b0c:3da8:0000:0000:0000:0000` and `fd48:a12f:7b0c:3da8:0000:0000:0000:abcd` should be in the same network if the subnet is the default 64 bit prefix
+/// `fd48:a12f:7b0c:3da8:0000:0000:0000:0000` and `fd48:a12f:7b0c:3da8:0000:0000:0000:abcd`
+///  
+/// should be in the same network if the subnet is the default 64 bit prefix
 ///
 /// subnet = `ffff:ffff:ffff:ffff:0000:0000:0000`
 ///  
