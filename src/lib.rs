@@ -8,7 +8,7 @@ use futures::{stream::FuturesUnordered, Stream, StreamExt};
 use message::MdnsMessage;
 use protocols::handler::{Event, Handler};
 use record::ResourceRecord;
-use service::{Query, Service};
+use service::{Query, Service, ServiceState};
 use std::{io, time::Duration};
 use thiserror::Error;
 use tokio::{
@@ -73,7 +73,12 @@ impl Default for DnsSd2 {
 }
 
 impl<'a> DnsSd2 {
-    pub fn handle<T: Handler<'a>>(&mut self, h: &T, event: &Event, timeouts: &mut Vec<u64>) {
+    pub fn handle<T: Handler<'a>>(
+        &mut self,
+        h: &T,
+        event: &Event,
+        timeouts: &mut Vec<(ServiceState, u64)>,
+    ) {
         h.handle(
             event,
             &mut self.records,
@@ -168,7 +173,6 @@ impl<'a> DnsSd2 {
 
                 //Collection of timer futures
                 let mut timeouts = FuturesUnordered::new();
-
                 //Normal 1s TTL Timer
                 let mut interval = interval(Duration::from_secs(1));
 
@@ -178,7 +182,6 @@ impl<'a> DnsSd2 {
                             Event::Message(MdnsMessage::default())
                         }
                         c = self.rx.recv() => {
-                            debug!("{:?}", c);
                             let s = Service::default();
                             yield s;
                             c.expect("Should contain an Event")
@@ -188,7 +191,7 @@ impl<'a> DnsSd2 {
                             Event::TimeElapsed(t.unwrap_or_default())
                         }
                         _ = interval.tick() => {
-                            Event::TimeElapsed(1000)
+                            Event::Ttl()
 
                         }
                     };
@@ -199,15 +202,15 @@ impl<'a> DnsSd2 {
                     self.handle(&register_handler, &result, &mut new_timeouts);
 
                     //Add the resulting timeouts from the chain to our dynamic interval futures
-                    for timeout in new_timeouts {
-                        timeouts.push(sleep_for(timeout));
+                    for (s, t) in new_timeouts {
+                        timeouts.push(sleep_for(s,t));
                     }
                 }
         }
     }
 }
 
-async fn sleep_for(duration: u64) -> u64 {
+async fn sleep_for(state: ServiceState, duration: u64) -> (ServiceState, u64) {
     tokio::time::sleep(Duration::from_millis(duration)).await;
-    duration
+    (state, duration)
 }

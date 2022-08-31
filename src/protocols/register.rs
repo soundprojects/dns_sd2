@@ -1,4 +1,4 @@
-use crate::{record::ResourceRecord, Query, Service};
+use crate::{record::ResourceRecord, service::ServiceState, Query, Service};
 
 use super::handler::{Event, Handler};
 
@@ -32,7 +32,7 @@ impl<'a> Handler<'a> for RegisterHandler<'a> {
         records: &mut Vec<ResourceRecord>,
         registration: &mut Option<Service>,
         query: &mut Option<Query>,
-        timeouts: &mut Vec<u64>,
+        timeouts: &mut Vec<(ServiceState, u64)>,
     ) {
         match event {
             Event::Register(n, t) => {

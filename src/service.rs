@@ -12,11 +12,17 @@ pub struct Query {
     _timeout: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum ServiceState {
     Prelude,
-    Probing,
-    Announcing,
+    WaitForFirstProbe,
+    FirstProbe,
+    WaitForSecondProbe,
+    SecondProbe,
+    WaitForAnnouncing,
+    FirstAnnouncement,
+    WaitForSecondAnnouncement,
+    SecondAnnouncement,
     Registered,
     ShuttingDown,
 }

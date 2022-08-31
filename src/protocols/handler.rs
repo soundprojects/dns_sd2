@@ -1,4 +1,4 @@
-use crate::{message::MdnsMessage, record::ResourceRecord, Query, Service};
+use crate::{message::MdnsMessage, record::ResourceRecord, service::ServiceState, Query, Service};
 
 /// Chain of Responsibility Handler
 ///
@@ -23,14 +23,15 @@ pub trait Handler<'a> {
         records: &mut Vec<ResourceRecord>,
         registration: &mut Option<Service>,
         query: &mut Option<Query>,
-        timeouts: &mut Vec<u64>,
+        timeouts: &mut Vec<(ServiceState, u64)>,
     );
 }
 
 #[derive(Debug)]
 pub enum Event {
     Message(MdnsMessage),
-    TimeElapsed(u64),
+    TimeElapsed((ServiceState, u64)),
+    Ttl(),
     Closing(),
     Browse(String),
     Register(String, Vec<String>),

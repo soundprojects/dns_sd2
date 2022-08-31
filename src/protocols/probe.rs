@@ -1,6 +1,6 @@
-use crate::{record::ResourceRecord, service::ServiceState, Query, Service};
-
 use super::handler::{Event, Handler};
+use crate::{record::ResourceRecord, service::ServiceState, Query, Service};
+use rand::{thread_rng, Rng};
 
 /// Probe MDNS Service
 ///
@@ -32,17 +32,40 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
         records: &mut Vec<ResourceRecord>,
         registration: &mut Option<Service>,
         query: &mut Option<Query>,
-        timeouts: &mut Vec<u64>,
+        timeouts: &mut Vec<(ServiceState, u64)>,
     ) {
         if let Some(r) = registration {
+            match event {
+                Event::TimeElapsed((s, _t)) => match s {
+                    ServiceState::WaitForFirstProbe => r.state = ServiceState::FirstProbe,
+                    ServiceState::WaitForSecondProbe => r.state = ServiceState::SecondProbe,
+                    _ => {}
+                },
+                _ => {}
+            }
+
             match r.state {
                 ServiceState::Prelude => {
+                    debug!("Adding Timeout for Probing {}", r.name);
+                    r.state = ServiceState::WaitForFirstProbe;
+                    timeouts.push((r.state, thread_rng().gen_range(0..250)));
+                }
+                ServiceState::FirstProbe => {
                     debug!("Sending Probe Query for {}", r.name);
-                    r.state = ServiceState::Probing
+                    //Send Probe Query Here
+                    r.state = ServiceState::WaitForSecondProbe;
+                    timeouts.push((r.state, 250));
+                }
+                ServiceState::SecondProbe => {
+                    debug!("Sending Second Probe Query for {}", r.name);
+                    //Send Second Probe Query Here
+                    r.state = ServiceState::WaitForAnnouncing;
+                    timeouts.push((r.state, 250));
                 }
                 _ => {}
             }
         }
+
         if let Some(v) = &self.next {
             v.handle(event, records, registration, query, timeouts);
         }
