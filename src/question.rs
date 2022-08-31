@@ -1,5 +1,15 @@
-/// Question section format
+/// Question
 ///
+/// Note that the top bit of the QClass defines whether this question
+///
+/// is multicast (default) or unicast
+///## Attributes
+///
+/// Attribute | Value | Explanation
+/// :-- |:-- |:--
+/// Name | String | Domain Name
+/// Type | [`QType`] | Defines Type of Resource
+/// Class | [`QClass`] | Defines Class of Network (First bit QM / QU)
 ///
 ///## RFC Reference
 /// [RFC1035 Section 4.1.2 - Question section format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.2)
