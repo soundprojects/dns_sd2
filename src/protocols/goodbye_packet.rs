@@ -1,3 +1,7 @@
+use crate::{record::ResourceRecord, service::ServiceState, Query, Service};
+
+use super::handler::{Event, Handler};
+
 /// Send Goodbye Packets
 ///
 /// Last step in MDNS shutdown protocol
@@ -8,6 +12,34 @@
 ///
 /// [RFC6762 Section 10.1 - Goodbye Packets](https://www.rfc-editor.org/rfc/rfc6762#section-10.1)
 /// - Send unsollicited response with a TTL of 0
-pub async fn goodbye() -> (){
-    todo!();
+#[derive(Default, Copy, Clone)]
+pub struct GoodbyeHandler<'a> {
+    next: Option<&'a dyn Handler<'a>>,
+}
+
+impl<'a> Handler<'a> for GoodbyeHandler<'a> {
+    fn set_next(&mut self, next: &'a dyn Handler<'a>) -> &mut dyn Handler<'a> {
+        self.next = Some(next);
+        self
+    }
+    fn handle(
+        &self,
+        event: &Event,
+        records: &mut Vec<ResourceRecord>,
+        registration: &mut Option<Service>,
+        query: &mut Option<Query>,
+        timeouts: &mut Vec<(ServiceState, u64)>,
+    ) {
+        if let Some(_r) = registration {
+            match event {
+                Event::Closing() => {
+                    info!("CLOSING!");
+                }
+                _ => {}
+            }
+        }
+        if let Some(v) = &self.next {
+            v.handle(event, records, registration, query, timeouts);
+        }
+    }
 }

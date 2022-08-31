@@ -3,8 +3,9 @@ use packed_struct::prelude::*;
 /// MDNS Header Format
 ///
 ///
-/// Uses PackedStruct for packing with bit layout as shown below:
+/// Uses [`PackedStruct`] for packing with bit layout as shown below:
 ///
+/// ```no_run
 // /                                 1  1  1  1  1  1
 // /   0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 // / +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -20,8 +21,9 @@ use packed_struct::prelude::*;
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 /// |                    ARCOUNT                    |
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-///
-///[1035 Section 4.1.1 - Header Format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.1)
+///```
+///## RFC Reference
+///- [1035 Section 4.1.1 - Header Format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.1)
 #[derive(PackedStruct, Default, Clone, Debug)]
 #[packed_struct(endian = "msb", bit_numbering = "msb0")]
 pub struct Header {
@@ -89,22 +91,21 @@ pub struct Header {
     pub arcount: u16,
 }
 
-impl Header{
-    pub fn to_bytes(&self) -> Vec<u8>{
+impl Header {
+    pub fn to_bytes(&self) -> Vec<u8> {
         self.pack().expect("Failed to pack Header").into()
     }
 }
 
-///OPCODE ENUMERATOR
+///A four bit field that specifies the kind of query in this message. This value is set by the originator of a query
+/// and is copied into the response. The values are:
+///         -  0       a standard query (QUERY)
+///         - 1       an inverse query (IQUERY)
+///         - 2       a server status request (STATUS)
+///         - 3-15    for future use
 ///
-///OPCODE    A four bit field that specifies kind of query in this message. This value is set by the originator of a query
-///          and is copied into the response. The values are:
-///          0       a standard query (QUERY)
-///          1       an inverse query (IQUERY)
-///          2       a server status request (STATUS)
-///          3-15    for future use
-///
-///[1035 Section 4.1.1 - Header Format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.1)
+///## RFC Reference
+///- [1035 Section 4.1.1 - Header Format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.1)
 #[derive(PrimitiveEnum_u8, Clone, Copy, Debug, PartialEq)]
 pub enum OpCode {
     StandardQuery = 0,
@@ -121,19 +122,19 @@ impl Default for OpCode {
     }
 }
 
-///RCODE ENUMERATOR
-///
-///RCODE     Response code - this 4 but field is set as part of responses. The values have the following interpretation:
-///          0   No error condition
-///          1   Format error - The name server was unable to interpret the query.
-///          2   Server failure - The name server was unable to process this query due to a problem with the name server.
-///          3   Name error - Meaningful only for responses from an authoritative name server. This code signifies that
+///This 4 bit field is set as part of responses. The values have the following interpretation:
+///          - 0   No error condition
+///          - 1   Format error - The name server was unable to interpret the query.
+///          - 2   Server failure - The name server was unable to process this query due to a problem with the name server.
+///          - 3   Name error - Meaningful only for responses from an authoritative name server. This code signifies that
 ///                           domain name referenced in the query does not exist
-///          4   Not Implemented - The name server does not support this kind of query
-///          5   Refused - The name server refuses to perform the specified operation for policy reasons.
+///          - 4   Not Implemented - The name server does not support this kind of query
+///          - 5   Refused - The name server refuses to perform the specified operation for policy reasons.
 ///                        For example, a name server mmay not wish to provide the information to the particular requester,
 ///                        or a name server may not wish to performm a particular operation (e.g. zone transfer) for particular data
-///          6-15 Reserved for future use
+///          - 6-15 Reserved for future use
+///
+///## RFC Reference
 ///[1035 Section 4.1.1 - Header Format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.1)
 #[derive(PrimitiveEnum_u8, Clone, Copy, Debug, PartialEq)]
 pub enum RCode {

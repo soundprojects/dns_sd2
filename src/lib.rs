@@ -19,7 +19,10 @@ use tokio::{
 use tokio_util::{codec::BytesCodec, udp::UdpFramed};
 
 use crate::{
-    protocols::{probe::ProbeHandler, register::RegisterHandler},
+    protocols::{
+        announce::AnnouncementHandler, goodbye_packet::GoodbyeHandler, probe::ProbeHandler,
+        register::RegisterHandler,
+    },
     utility::create_socket,
 };
 
@@ -34,6 +37,7 @@ pub mod records;
 pub mod service;
 pub mod utility;
 
+///Mdns Error Types
 #[derive(Debug, Error)]
 pub enum MdnsError {
     #[error("Address is already taken")]
@@ -41,16 +45,20 @@ pub enum MdnsError {
         #[from]
         source: io::Error,
     },
+    #[error("Closing")]
+    Closing {},
 }
 
 /// DnsSd2
 ///
-/// Main library struct
+/// # Arguments
+/// - Records:        Contains a Vec of [`ResourceRecord`] currently active on the network
 ///
-/// Records:        Contains a Vec of ResourceRecord's currently active on the network
-/// Registrations:  May contain a registered Service
-/// Query:          May contain an active search
-/// Tx.Rx:          Channel for communicating (closing)
+/// - Registrations:  May contain a registered [`Service`]
+///
+/// - Query:          May contain an active search
+///
+/// - Tx.Rx:          Channel for communicating (closing)
 pub struct DnsSd2 {
     records: Vec<ResourceRecord>,
     registration: Option<Service>,
@@ -72,6 +80,15 @@ impl Default for DnsSd2 {
     }
 }
 
+impl Drop for DnsSd2 {
+    fn drop(&mut self) {
+        debug!("Dropping DnsSd2");
+        self.tx
+            .send(Event::Closing())
+            .expect("Failed to send with Tx");
+    }
+}
+
 impl<'a> DnsSd2 {
     pub fn handle<T: Handler<'a>>(
         &mut self,
@@ -88,7 +105,7 @@ impl<'a> DnsSd2 {
         )
     }
 
-    /// Registers a Mdns Service
+    /// Registers an Mdns [`Service`]
     ///
     /// ## Example
     ///
@@ -121,7 +138,7 @@ impl<'a> DnsSd2 {
         self.init().await
     }
 
-    ///Browse for a Mdns Service
+    /// Browse for an Mdns [`Service`]
     ///
     /// ## Example
     ///
@@ -150,7 +167,7 @@ impl<'a> DnsSd2 {
         self.init().await
     }
 
-    /// Called by `browse()` or `register()` to run main loop
+    /// Called by [`browse()`] or [`register()`] to run main loop
     ///
     /// This starts the main event loop for the library and builds the chain of responsibility
     ///
@@ -168,7 +185,13 @@ impl<'a> DnsSd2 {
 
                 //Chain of responsibility
                 let mut register_handler = RegisterHandler::default();
-                let probe_handler = ProbeHandler::default();
+                let mut probe_handler = ProbeHandler::default();
+                let mut announcement_handler = AnnouncementHandler::default();
+                let goodbye_handler = GoodbyeHandler::default();
+
+                //Set Chain Order from back to front
+                announcement_handler.set_next(&goodbye_handler);
+                probe_handler.set_next(&announcement_handler);
                 register_handler.set_next(&probe_handler);
 
                 //Collection of timer futures
@@ -183,6 +206,7 @@ impl<'a> DnsSd2 {
                         }
                         c = self.rx.recv() => {
                             let s = Service::default();
+                            debug!("M");
                             yield s;
                             c.expect("Should contain an Event")
                         }
@@ -210,6 +234,9 @@ impl<'a> DnsSd2 {
     }
 }
 
+/// Sleep for a certain duration
+///
+/// Pass along the [`ServiceState`] for identification of finished timeouts in the  [`Handler`] chain
 async fn sleep_for(state: ServiceState, duration: u64) -> (ServiceState, u64) {
     tokio::time::sleep(Duration::from_millis(duration)).await;
     (state, duration)

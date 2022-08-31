@@ -35,15 +35,26 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
         timeouts: &mut Vec<(ServiceState, u64)>,
     ) {
         if let Some(r) = registration {
+            //TIMEOUTS
             match event {
-                Event::TimeElapsed((s, _t)) => match s {
-                    ServiceState::WaitForFirstProbe => r.state = ServiceState::FirstProbe,
-                    ServiceState::WaitForSecondProbe => r.state = ServiceState::SecondProbe,
-                    _ => {}
-                },
+                Event::TimeElapsed((s, _t)) => {
+                    //States must match with registered timeouts
+                    if *s == r.state {
+                        match s {
+                            ServiceState::WaitForFirstProbe => r.state = ServiceState::FirstProbe,
+                            ServiceState::WaitForSecondProbe => r.state = ServiceState::SecondProbe,
+                            ServiceState::WaitForAnnouncing => {
+                                r.state = ServiceState::FirstAnnouncement
+                            }
+
+                            _ => {}
+                        }
+                    }
+                }
                 _ => {}
             }
 
+            //STATE MANAGEMENT
             match r.state {
                 ServiceState::Prelude => {
                     debug!("Adding Timeout for Probing {}", r.name);

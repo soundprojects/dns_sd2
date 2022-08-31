@@ -1,3 +1,4 @@
+pub mod announce;
 pub mod duplicate_answer_suppression;
 pub mod duplicate_question_suppression;
 pub mod goodbye_packet;

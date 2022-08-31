@@ -1,14 +1,14 @@
 use crate::{header::Header, question::Question, record::ResourceRecord};
 
-/// MDNS Message
-///
 /// Message struct for an MDNS Message
 ///
 /// UDP Messages may not exceed 512 octets
-/// If the message is larger, the message needs to be split with the truncated flag set for all but the last message
+/// If the message is larger, the message needs to be split with
+/// the truncated flag set for all but the last message
 ///
 /// See linked files for information about the content
 ///
+///## RFC Reference
 /// [1035 Section 4.1 - Format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1)
 ///
 /// ## Example
@@ -16,7 +16,7 @@ use crate::{header::Header, question::Question, record::ResourceRecord};
 /// ```
 /// use dns_sd2::message::MdnsMessage;
 ///
-///
+/// let message = MdnsMessage::default();
 /// ```
 #[derive(Default, Debug)]
 pub struct MdnsMessage {

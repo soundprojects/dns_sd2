@@ -1,6 +1,9 @@
 /// Question section format
 ///
+///
+///## RFC Reference
 /// [RFC1035 Section 4.1.2 - Question section format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.2)
+/// ```no_run
 ///                                 1  1  1  1  1  1
 ///   0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -12,6 +15,7 @@
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 /// |                     QCLASS                    |
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+/// ```
 #[derive(Clone, Debug)]
 pub struct Question {
     //Name      a domain name represented as a sequence of labels, where
@@ -59,8 +63,6 @@ impl Question {
     }
 }
 
-/// DNS QClass
-///
 /// QClass defines what network class the question is asking for
 ///
 /// QClass are a superset of Class, so all Class are valid QClass
@@ -69,9 +71,10 @@ impl Question {
 ///
 /// When used in Query, the top bit indicates whether this is a Multicast or Unicast Query
 ///
-/// [RFC6762 Section 5.4 - Questions Requesting Unicast Responses](https://www.rfc-editor.org/rfc/rfc6762#section-5.4)
+///## RFC Reference
+/// - [RFC6762 Section 5.4 - Questions Requesting Unicast Responses](https://www.rfc-editor.org/rfc/rfc6762#section-5.4)
 ///
-/// [RFC1035 Section 3.2.5 - CLASS Values](https://www.rfc-editor.org/rfc/rfc1035#section-3.2.5)
+/// - [RFC1035 Section 3.2.5 - CLASS Values](https://www.rfc-editor.org/rfc/rfc1035#section-3.2.5)
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum QClass {
     // 1 The Internet
@@ -86,16 +89,15 @@ pub enum QClass {
     Any = 255,
 }
 
-/// DNS QType
-///
 /// QType defines what the question is asking for
 ///
 /// QTypes are a superset of Types, so all Types are valid QTypes
 ///
 /// This field is used in the Question section of the MDNS Message
 ///
-/// [RFC1035 Section 3.2.2 - DNS Types](https://www.rfc-editor.org/rfc/rfc1035#section-3.2.2)
-/// [RFC1035 Section 4.1 - Format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1)
+///## RFC Reference
+/// - [RFC1035 Section 3.2.2 - DNS Types](https://www.rfc-editor.org/rfc/rfc1035#section-3.2.2)
+/// - [RFC1035 Section 4.1 - Format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1)
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum QType {

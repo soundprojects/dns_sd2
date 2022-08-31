@@ -6,13 +6,13 @@ pub struct Service {
     pub state: ServiceState,
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Query {
     _name: String,
     _timeout: u64,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum ServiceState {
     Prelude,
     WaitForFirstProbe,

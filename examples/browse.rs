@@ -15,4 +15,6 @@ pub async fn main() {
     while let Some(Ok(s)) = stream.next().await {
         debug!("Found a service {:?}", s);
     }
+
+    debug!("Reached End");
 }

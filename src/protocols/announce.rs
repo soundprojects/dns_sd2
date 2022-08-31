@@ -1,3 +1,6 @@
+use crate::{record::ResourceRecord, service::ServiceState, Query, Service};
+
+use super::handler::{Event, Handler};
 
 /// Announce MDNS Service
 ///
@@ -10,16 +13,59 @@
 /// - For the unique records, set cache flush bit to '1'
 /// - Wait 1s
 /// - Send unsollicited response again
-pub async fn announce() -> io::Result<()> {
-    let random_delay = rand::thread_rng().gen_range(0..250);
-    tokio::time::sleep(std::time::Duration::from_millis(random_delay)).await;
+#[derive(Default, Copy, Clone)]
+pub struct AnnouncementHandler<'a> {
+    next: Option<&'a dyn Handler<'a>>,
+}
 
-    //TODO Send unsollicited response
+impl<'a> Handler<'a> for AnnouncementHandler<'a> {
+    fn set_next(&mut self, next: &'a dyn Handler<'a>) -> &mut dyn Handler<'a> {
+        self.next = Some(next);
+        self
+    }
+    fn handle(
+        &self,
+        event: &Event,
+        records: &mut Vec<ResourceRecord>,
+        registration: &mut Option<Service>,
+        query: &mut Option<Query>,
+        timeouts: &mut Vec<(ServiceState, u64)>,
+    ) {
+        if let Some(r) = registration {
+            //TIMEOUTS
+            match event {
+                Event::TimeElapsed((s, _t)) => {
+                    //States must match with registered timeouts
+                    if *s == r.state {
+                        match s {
+                            ServiceState::WaitForSecondAnnouncement => {
+                                r.state = ServiceState::SecondAnnouncement
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                _ => {}
+            }
 
-    //TODO Select statement with receiving and parsing / timer
-    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-
-    //TODO Send unsollicited response
-
-    Ok(())
+            //STATE MANAGEMENT
+            match r.state {
+                ServiceState::FirstAnnouncement => {
+                    //First Announcement Here
+                    debug!("First Announcement Sent");
+                    r.state = ServiceState::WaitForSecondAnnouncement;
+                    timeouts.push((r.state, 1000));
+                }
+                ServiceState::SecondAnnouncement => {
+                    //Send Second Announcement Here
+                    debug!("Second Announcement Sent, REGISTERED");
+                    r.state = ServiceState::Registered;
+                }
+                _ => {}
+            }
+        }
+        if let Some(v) = &self.next {
+            v.handle(event, records, registration, query, timeouts);
+        }
+    }
 }
