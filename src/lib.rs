@@ -49,16 +49,25 @@ pub enum MdnsError {
     Closing {},
 }
 
-/// DnsSd2
+/// Construct DnsSd2 to allow for searching and registering services
 ///
-/// # Arguments
-/// - Records:        Contains a Vec of [`ResourceRecord`] currently active on the network
+/// ## Arguments
 ///
-/// - Registrations:  May contain a registered [`Service`]
+/// Attribute | Explanation
+/// :--|:--
+/// Records | Contains a Vec of [`ResourceRecord`] currently active on the network
+/// Registrations | May contain a registered [`Service`]
+/// Query | May contain an active search
+/// Tx.Rx | Channel for communicating (closing)
 ///
-/// - Query:          May contain an active search
+/// ## Example
 ///
-/// - Tx.Rx:          Channel for communicating (closing)
+/// ```no_run
+/// use dns_sd2::DnsSd2;
+///
+/// let client = DnsSd2::default();
+///
+/// ```
 pub struct DnsSd2 {
     records: Vec<ResourceRecord>,
     registration: Option<Service>,
@@ -173,7 +182,7 @@ impl<'a> DnsSd2 {
     ///
     /// A select! loop picks between a 1s Interval Stream, a dynamic interval stream set by the chain and the UdpFramed Stream
     ///
-    /// Returns a stream for the requested Enum
+    /// Returns a stream for registration or search
     pub async fn init(&mut self) -> impl Stream<Item = Result<Service, MdnsError>> + '_ {
         info!("Initializing Event Loop");
 

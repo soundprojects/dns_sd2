@@ -8,14 +8,12 @@
 /// :-- |:-- |:--
 /// Name | String | Service Name
 /// Txt Records | Vec<String> | Txt Records in the format of `key=value`
-/// Timeout | u64 | TODO
 /// State | [`ServiceState`] | State of the Service
 
 #[derive(Debug, Default)]
 pub struct Service {
     pub name: String,
     pub txt_records: Vec<String>,
-    pub timeout: u64,
     pub state: ServiceState,
 }
 
