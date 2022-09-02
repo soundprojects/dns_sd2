@@ -79,6 +79,7 @@ pub struct DnsSd2 {
 impl Default for DnsSd2 {
     fn default() -> Self {
         let (tx, rx) = unbounded_channel();
+
         Self {
             records: Default::default(),
             registration: Default::default(),
@@ -92,9 +93,8 @@ impl Default for DnsSd2 {
 impl Drop for DnsSd2 {
     fn drop(&mut self) {
         debug!("Dropping DnsSd2");
-        self.tx
-            .send(Event::Closing())
-            .expect("Failed to send with Tx");
+        let handler = GoodbyeHandler::default();
+        self.handle(&handler, &Event::Closing(), &mut vec![]);
     }
 }
 

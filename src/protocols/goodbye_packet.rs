@@ -30,6 +30,7 @@ impl<'a> Handler<'a> for GoodbyeHandler<'a> {
         query: &mut Option<Query>,
         timeouts: &mut Vec<(ServiceState, u64)>,
     ) {
+        debug!("GOODBYE!");
         if let Some(_r) = registration {
             match event {
                 Event::Closing() => {
