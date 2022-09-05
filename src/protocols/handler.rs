@@ -15,6 +15,7 @@ use crate::{message::MdnsMessage, record::ResourceRecord, service::ServiceState,
 /// For timing purposes like updating the Time To Live for records or for timeouts, such as in Probing or Announcing, a Event::TimeElepased event is sent into the chain
 ///
 /// Each chain part implements the Handler trait
+
 pub trait Handler<'a> {
     fn set_next(&mut self, next: &'a dyn Handler<'a>) -> &mut dyn Handler<'a>;
     fn handle(
@@ -24,6 +25,7 @@ pub trait Handler<'a> {
         registration: &mut Option<Service>,
         query: &mut Option<Query>,
         timeouts: &mut Vec<(ServiceState, u64)>,
+        queue: &mut Vec<MdnsMessage>,
     );
 }
 

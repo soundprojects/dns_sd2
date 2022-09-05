@@ -1,4 +1,8 @@
-use crate::{header::Header, question::Question, record::ResourceRecord};
+use crate::{
+    header::Header,
+    question::{QClass, QType, Question},
+    record::ResourceRecord,
+};
 
 /// Message struct for an MDNS Message
 ///
@@ -83,5 +87,16 @@ impl MdnsMessage {
         }
 
         bytes
+    }
+
+    pub fn question(name: &str) -> MdnsMessage {
+        let mut message = MdnsMessage::default();
+        message.questions.push(Question {
+            name: name.to_string(),
+            qtype: QType::Any,
+            qclass: QClass::Any,
+        });
+        message.header.qdcount = 1;
+        message
     }
 }

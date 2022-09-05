@@ -1,4 +1,4 @@
-use crate::{record::ResourceRecord, service::ServiceState, Query, Service};
+use crate::{message::MdnsMessage, record::ResourceRecord, service::ServiceState, Query, Service};
 
 use super::handler::{Event, Handler};
 
@@ -33,6 +33,7 @@ impl<'a> Handler<'a> for RegisterHandler<'a> {
         registration: &mut Option<Service>,
         query: &mut Option<Query>,
         timeouts: &mut Vec<(ServiceState, u64)>,
+        queue: &mut Vec<MdnsMessage>,
     ) {
         match event {
             Event::Register(n, t) => {
@@ -47,7 +48,7 @@ impl<'a> Handler<'a> for RegisterHandler<'a> {
             _ => {}
         }
         if let Some(v) = &self.next {
-            v.handle(event, records, registration, query, timeouts);
+            v.handle(event, records, registration, query, timeouts, queue);
         }
     }
 }

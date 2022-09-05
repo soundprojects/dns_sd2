@@ -1,14 +1,17 @@
 use std::{
-    io,
-    net::{Ipv4Addr, Ipv6Addr, SocketAddrV4},
+    io::{self},
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4},
     ops::BitAnd,
 };
 
 use bitvec::prelude::*;
+use bytes::Bytes;
+use futures::SinkExt;
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use tokio::net::UdpSocket;
+use tokio_util::{codec::BytesCodec, udp::UdpFramed};
 
-use crate::{MdnsError, IP_ANY};
+use crate::{message::MdnsMessage, MdnsError, IP_ANY};
 
 /// When there might be multiple responders on the system,
 /// the port for UDP messages might be occupied without the REUSE_ADDR set
@@ -192,3 +195,18 @@ pub fn is_reachable_ipv6(host_ip: &Ipv6Addr, host_subnet: &Ipv6Addr, source_ip: 
 //
 // TODO Clarify protocol procedures
 // Impl Ord for Service{}
+
+///Send an Mdns Message to the multicast group with the given Socket
+pub async fn send_message(
+    socket: &mut UdpFramed<BytesCodec>,
+    message: &MdnsMessage,
+) -> std::io::Result<()> {
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(224, 0, 0, 251)), 5353);
+
+    socket
+        .send((Bytes::from(message.to_bytes()), addr))
+        .await
+        .expect("Should send message");
+
+    Ok(())
+}

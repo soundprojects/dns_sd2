@@ -1,5 +1,5 @@
 use super::handler::{Event, Handler};
-use crate::{record::ResourceRecord, service::ServiceState, Query, Service};
+use crate::{message::MdnsMessage, record::ResourceRecord, service::ServiceState, Query, Service};
 use rand::{thread_rng, Rng};
 
 /// Probe MDNS Service
@@ -37,6 +37,7 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
         registration: &mut Option<Service>,
         query: &mut Option<Query>,
         timeouts: &mut Vec<(ServiceState, u64)>,
+        queue: &mut Vec<MdnsMessage>,
     ) {
         if let Some(r) = registration {
             //TIMEOUTS
@@ -67,13 +68,13 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
                 }
                 ServiceState::FirstProbe => {
                     debug!("Sending Probe Query for {}", r.name);
-                    //Send Probe Query Here
+                    queue.push(MdnsMessage::question(&r.name));
                     r.state = ServiceState::WaitForSecondProbe;
                     timeouts.push((r.state, 250));
                 }
                 ServiceState::SecondProbe => {
                     debug!("Sending Second Probe Query for {}", r.name);
-                    //Send Second Probe Query Here
+                    queue.push(MdnsMessage::question(&r.name));
                     r.state = ServiceState::WaitForAnnouncing;
                     timeouts.push((r.state, 250));
                 }
@@ -82,7 +83,7 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
         }
 
         if let Some(v) = &self.next {
-            v.handle(event, records, registration, query, timeouts);
+            v.handle(event, records, registration, query, timeouts, queue);
         }
     }
 }

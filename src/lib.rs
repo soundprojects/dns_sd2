@@ -4,7 +4,7 @@ extern crate pretty_env_logger;
 extern crate log;
 
 use async_stream::try_stream;
-use futures::{stream::FuturesUnordered, Stream, StreamExt};
+use futures::{executor::block_on, stream::FuturesUnordered, Stream, StreamExt};
 use message::MdnsMessage;
 use protocols::handler::{Event, Handler};
 use record::ResourceRecord;
@@ -23,7 +23,7 @@ use crate::{
         announce::AnnouncementHandler, goodbye_packet::GoodbyeHandler, probe::ProbeHandler,
         register::RegisterHandler,
     },
-    utility::create_socket,
+    utility::{create_socket, send_message},
 };
 
 const IP_ANY: [u8; 4] = [0, 0, 0, 0];
@@ -94,7 +94,19 @@ impl Drop for DnsSd2 {
     fn drop(&mut self) {
         debug!("Dropping DnsSd2");
         let handler = GoodbyeHandler::default();
-        self.handle(&handler, &Event::Closing(), &mut vec![]);
+        //Socket
+        let udp_socket = create_socket().expect("Failed to create socket");
+
+        let mut frame = UdpFramed::new(udp_socket, BytesCodec::new());
+
+        let mut queue = vec![];
+
+        self.handle(&handler, &Event::Closing(), &mut vec![], &mut queue);
+
+        //Note: We block here because Drop must be synchronous
+        for message in queue {
+            block_on(send_message(&mut frame, &message)).expect("Failed to send goodbye");
+        }
     }
 }
 
@@ -104,6 +116,7 @@ impl<'a> DnsSd2 {
         h: &T,
         event: &Event,
         timeouts: &mut Vec<(ServiceState, u64)>,
+        queue: &mut Vec<MdnsMessage>,
     ) {
         h.handle(
             event,
@@ -111,7 +124,8 @@ impl<'a> DnsSd2 {
             &mut self.registration,
             &mut self.query,
             timeouts,
-        )
+            queue,
+        );
     }
 
     /// Registers an Mdns [`Service`]
@@ -229,14 +243,21 @@ impl<'a> DnsSd2 {
                         }
                     };
 
+                    //Fill a Vec with new timeouts and a Vec with a queue of messages we will send with the socket
                     let mut new_timeouts = vec![];
+                    let mut queue = vec![];
 
                     //Execute the chain
-                    self.handle(&register_handler, &result, &mut new_timeouts);
+                    self.handle(&register_handler, &result, &mut new_timeouts, &mut queue);
 
                     //Add the resulting timeouts from the chain to our dynamic interval futures
                     for (s, t) in new_timeouts {
                         timeouts.push(sleep_for(s,t));
+                    }
+
+                    //Send the messages in the queue with out socket
+                    for message in queue{
+                        send_message(&mut frame, &message).await.expect("Should send Message");
                     }
                 }
         }
