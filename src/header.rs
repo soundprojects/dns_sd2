@@ -71,7 +71,7 @@ pub struct Header {
     //                           domain name referenced in the query does not exist
     //          4   Not Implemented - The name server does not support this kind of query
     //          5   Refused - The name server refuses to perform the specified operation for policy reasons.
-    //                        For example, a name server mmay not wish to provide the information to the particular requester,
+    //                        For example, a name server may not wish to provide the information to the particular requester,
     //                        or a name server may not wish to performm a particular operation (e.g. zone transfer) for particular data
     //          6-15 Reserved for future use
     #[packed_field(bits = "28..=31", ty = "enum")]

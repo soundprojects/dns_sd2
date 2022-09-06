@@ -1,3 +1,5 @@
+use crate::record::ResourceRecord;
+
 /// A Service is created by calling [`register()`]
 ///
 /// Upon creation, the probing and announcing process is initiated by the
@@ -15,6 +17,7 @@ pub struct Service {
     pub name: String,
     pub txt_records: Vec<String>,
     pub state: ServiceState,
+    pub records: Vec<ResourceRecord>,
 }
 
 /// A Query is created by calling [`browse()`]
@@ -29,8 +32,9 @@ pub struct Service {
 /// Timeout | u64 | Timeout until the next query
 #[derive(Debug, Default)]
 pub struct Query {
-    _name: String,
-    _timeout: u64,
+    pub name: String,
+    pub timeout: u64,
+    pub services: Vec<Service>,
 }
 
 /// Service State

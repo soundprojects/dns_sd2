@@ -9,11 +9,11 @@ use crate::record::RData;
 #[derive(Clone, Debug)]
 pub struct SRVRecord {
     //Service  A symbolic name for the desired service
-    //         Is preprended with a '_' to prevent conflicts with naturally occuring labels
+    //         Is preprended with a '_' to prevent conflicts with naturally occuring labels For example '_airplay'
     pub service: String,
-    //Proto    Protocol label, preprended with a '_'. Most commonly '_tcp' or '_udp'.
+    //Proto    Protocol label, preprended with a '_'. For example '_udp' or '_tcp'
     pub proto: String,
-    //Name     Domain the Resoruce Record refers to. Common example is '.local'
+    //Name     Domain the Resource Record refers to. Common example is '.local'
     pub name: String,
     //TTL      Standard Time to Live field. For SRV record the default is 120 Seconds.
     pub ttl: u32,
@@ -29,15 +29,44 @@ pub struct SRVRecord {
     //Port     Port on which the service handles traffic
     pub port: u16,
     //Target   The domain name of the target host. There MUST be one or more address records for this name and this name
-    //         cannot be an alias
+    //         cannot be an alias. For example 'MyMac.local'
+    pub target: String,
 }
 
 impl RData for SRVRecord {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = vec![];
 
+        //SERVICE
         bytes.push(self.service.len() as u8);
         bytes.extend(self.service.as_bytes());
+
+        //PROTO
+        bytes.push(self.proto.len() as u8);
+        bytes.extend(self.proto.as_bytes());
+
+        //NAME
+        bytes.push(self.name.len() as u8);
+        bytes.extend(self.name.as_bytes());
+
+        //TTL
+        bytes.extend(self.ttl.to_be_bytes());
+
+        //CLASS
+        bytes.extend((self.class as u16).to_be_bytes());
+
+        //PRIORITY
+        bytes.extend(self.priority.to_be_bytes());
+
+        //WEIGHT
+        bytes.extend(self.weight.to_be_bytes());
+
+        //PORT
+        bytes.extend(self.port.to_be_bytes());
+
+        //TARGET
+        bytes.push(self.target.len() as u8);
+        bytes.extend(self.target.as_bytes());
 
         bytes
     }

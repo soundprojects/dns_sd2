@@ -2,10 +2,11 @@ use crate::{message::MdnsMessage, record::ResourceRecord, service::ServiceState,
 
 use super::handler::{Event, Handler};
 
-/// Register MDNS Service
+/// Probe MDNS Service
 ///
 /// First step in MDNS announcement protocol
 ///
+/// This step is only available if MdnsResolver state is `State::Probing`
 ///
 /// [RFC6762 Section 8.1 - Probing](https://www.rfc-editor.org/rfc/rfc6762#section-8.1)
 /// - Wait for a 0-250ms time period to prevent simultaneous querying by devices on startup
@@ -15,13 +16,12 @@ use super::handler::{Event, Handler};
 /// - Wait for 250ms or get a response -> Return Conflict Error
 /// - Return Ok -> Service has not been registrered
 ///
-/// This handler sets the Registration allowing the Probing handler to start the announcement process
 #[derive(Default, Copy, Clone)]
-pub struct RegisterHandler<'a> {
+pub struct BrowseHandler<'a> {
     next: Option<&'a dyn Handler<'a>>,
 }
 
-impl<'a> Handler<'a> for RegisterHandler<'a> {
+impl<'a> Handler<'a> for BrowseHandler<'a> {
     fn set_next(&mut self, next: &'a dyn Handler<'a>) -> &mut dyn Handler<'a> {
         self.next = Some(next);
         self
@@ -36,28 +36,11 @@ impl<'a> Handler<'a> for RegisterHandler<'a> {
         queue: &mut Vec<MdnsMessage>,
     ) {
         match event {
-            Event::Register(n, t) => {
-                debug!("Added new Registration {} with txt_records {:?}", n, t);
+            Event::Browse(n) => {
+                debug!("Added new Query for {} ", n);
 
-                //Create records
-                let srv = ResourceRecord::create_srv_record(
-                    "_myservice".to_string(),
-                    "_udp".to_string(),
-                    120,
-                    53000,
-                    ".local".to_string(),
-                    "Thismachine.local".to_string(),
-                );
-
-                let a = ResourceRecord::create_a_record(
-                    "Thismachine.local".to_string(),
-                    [192, 168, 1, 99],
-                );
-
-                *registration = Some(Service {
+                *query = Some(Query {
                     name: n.to_string(),
-                    txt_records: t.to_vec(),
-                    records: vec![srv, a],
                     ..Default::default()
                 });
             }

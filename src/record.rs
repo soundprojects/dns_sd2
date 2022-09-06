@@ -163,6 +163,7 @@ impl ResourceRecord {
         ttl: u32,
         port: u16,
         domain: String,
+        target: String,
     ) -> Self {
         let rdata = SRVRecord {
             service: service.clone(),
@@ -173,6 +174,7 @@ impl ResourceRecord {
             port: port,
             weight: 0,
             name: domain,
+            target,
         };
 
         let rdata_packed = rdata.to_bytes();
