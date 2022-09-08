@@ -9,7 +9,7 @@ pub async fn main() {
     let mut client = DnsSd2::default();
 
     let stream = client
-        .register("myservice._udp.local".into(), vec!["key=value".into()])
+        .register("_myservice._udp.local".into(), vec!["key=value".into()])
         .await;
 
     pin_mut!(stream);

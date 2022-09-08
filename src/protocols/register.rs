@@ -39,25 +39,9 @@ impl<'a> Handler<'a> for RegisterHandler<'a> {
             Event::Register(n, t) => {
                 debug!("Added new Registration {} with txt_records {:?}", n, t);
 
-                //Create records
-                let srv = ResourceRecord::create_srv_record(
-                    "_myservice".to_string(),
-                    "_udp".to_string(),
-                    120,
-                    53000,
-                    ".local".to_string(),
-                    "Thismachine.local".to_string(),
-                );
-
-                let a = ResourceRecord::create_a_record(
-                    "Thismachine.local".to_string(),
-                    [192, 168, 1, 99],
-                );
-
                 *registration = Some(Service {
                     name: n.to_string(),
                     txt_records: t.to_vec(),
-                    records: vec![srv, a],
                     ..Default::default()
                 });
             }

@@ -45,8 +45,9 @@ pub struct ResourceRecord {
     //          This field specifies the meaning of the data in the RDATA field
     pub record_type: QType,
     //CLASS     two octets which specify the class of the data in the
-    //          RDATA field
+    //          RDATA field. The first bit indicates whether to flush Cache for this record
     pub record_class: QClass,
+    pub cache_flush: bool,
     //TTL       a 32 bit unsigned integer that specifies the time
     //          interval (in seconds) that the resource record may be
     //          cached before it should be discarded.  Zero values are
@@ -72,6 +73,7 @@ impl ResourceRecord {
             let mut bytes = vec![];
 
             //NAME
+            bytes.push(self.name.len() as u8);
             bytes.extend(self.name.as_bytes());
 
             //Name is terminated by a zero length Octet
@@ -82,7 +84,13 @@ impl ResourceRecord {
             bytes.extend((self.record_type as u16).to_be_bytes());
 
             //CLASS
-            bytes.extend((self.record_class as u16).to_be_bytes());
+            let mut class_bytes = (self.record_class as u16).to_be_bytes();
+
+            //If Caches need to be flushed, set first bit of Class to 1
+            if self.cache_flush {
+                class_bytes[0] |= 0b1000_0000;
+            }
+            bytes.extend(class_bytes);
 
             //TTL
             bytes.extend(self.ttl.to_be_bytes());
@@ -112,6 +120,7 @@ impl ResourceRecord {
             name,
             record_type: QType::A,
             record_class: QClass::In,
+            cache_flush: false,
             ttl: 120,
             rdlength: rdata_packed
                 .len()
@@ -130,6 +139,7 @@ impl ResourceRecord {
             name,
             record_type: QType::Aaaa,
             record_class: QClass::In,
+            cache_flush: false,
             ttl: 120,
             rdlength: rdata_packed
                 .len()
@@ -148,6 +158,7 @@ impl ResourceRecord {
             name,
             record_type: QType::Ptr,
             record_class: QClass::In,
+            cache_flush: false,
             ttl: 4500,
             rdlength: rdata_packed
                 .len()
@@ -171,7 +182,7 @@ impl ResourceRecord {
             priority: 0,
             ttl,
             class: QClass::In,
-            port: port,
+            port,
             weight: 0,
             name: domain,
             target,
@@ -180,8 +191,9 @@ impl ResourceRecord {
         let rdata_packed = rdata.to_bytes();
         ResourceRecord {
             name: service,
-            record_type: QType::Ptr,
+            record_type: QType::Srv,
             record_class: QClass::In,
+            cache_flush: false,
             ttl: 120,
             rdlength: rdata_packed
                 .len()

@@ -37,23 +37,23 @@ impl RData for SRVRecord {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = vec![];
 
-        //SERVICE
-        bytes.push(self.service.len() as u8);
-        bytes.extend(self.service.as_bytes());
+        // //SERVICE
+        // bytes.push(self.service.len() as u8);
+        // bytes.extend(self.service.as_bytes());
 
-        //PROTO
-        bytes.push(self.proto.len() as u8);
-        bytes.extend(self.proto.as_bytes());
+        // //PROTO
+        // bytes.push(self.proto.len() as u8);
+        // bytes.extend(self.proto.as_bytes());
 
-        //NAME
-        bytes.push(self.name.len() as u8);
-        bytes.extend(self.name.as_bytes());
+        // //NAME
+        // bytes.push(self.name.len() as u8);
+        // bytes.extend(self.name.as_bytes());
 
-        //TTL
-        bytes.extend(self.ttl.to_be_bytes());
+        // //TTL
+        // bytes.extend(self.ttl.to_be_bytes());
 
-        //CLASS
-        bytes.extend((self.class as u16).to_be_bytes());
+        // //CLASS
+        // bytes.extend((self.class as u16).to_be_bytes());
 
         //PRIORITY
         bytes.extend(self.priority.to_be_bytes());

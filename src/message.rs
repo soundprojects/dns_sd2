@@ -2,6 +2,7 @@ use crate::{
     header::Header,
     question::{QClass, QType, Question},
     record::ResourceRecord,
+    service::Service,
 };
 
 /// Message struct for an MDNS Message
@@ -95,8 +96,35 @@ impl MdnsMessage {
             name: name.to_string(),
             qtype: QType::Any,
             qclass: QClass::Any,
+            unicast_question: false,
         });
         message.header.qdcount = 1;
+        message
+    }
+
+    pub fn response(service: &Service) -> MdnsMessage {
+        let mut message = MdnsMessage::default();
+
+        message.header.qr = true;
+        message.header.aa = true;
+
+        let srv = ResourceRecord::create_srv_record(
+            service.name.clone(),
+            "_udp".to_string(),
+            120,
+            53000,
+            ".local".to_string(),
+            "MyMachine.local".to_string(),
+        );
+
+        let mut a = ResourceRecord::create_a_record(service.name.clone(), [192, 168, 1, 123]);
+        a.cache_flush = true;
+        message.authorities.push(srv);
+
+        message.authorities.push(a);
+
+        message.header.nscount = 2;
+
         message
     }
 }

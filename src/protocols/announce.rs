@@ -53,7 +53,7 @@ impl<'a> Handler<'a> for AnnouncementHandler<'a> {
             //STATE MANAGEMENT
             match r.state {
                 ServiceState::FirstAnnouncement => {
-                    //First Announcement Here
+                    queue.push(MdnsMessage::response(r));
                     debug!("First Announcement Sent");
                     r.state = ServiceState::WaitForSecondAnnouncement;
                     timeouts.push((r.state, 1000));

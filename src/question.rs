@@ -47,6 +47,7 @@ pub struct Question {
     //
     //          [RFC6762 Section 5.4 - Questions Requesting Unicast Responses](https://www.rfc-editor.org/rfc/rfc6762#section-5.4)
     pub qclass: QClass,
+    pub unicast_question: bool,
 }
 
 impl Question {
