@@ -255,7 +255,7 @@ impl<'a> DnsSd2 {
                         timeouts.push(sleep_for(s,t));
                     }
 
-                    //Send the messages in the queue with out socket
+                    //Send the messages in the queue with our socket
                     for message in queue{
                         send_message(&mut frame, &message).await.expect("Should send Message");
                     }

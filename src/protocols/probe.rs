@@ -68,13 +68,13 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
                 }
                 ServiceState::FirstProbe => {
                     debug!("Sending Probe Query for {}", r.name);
-                    queue.push(MdnsMessage::question(&r.name));
+                    queue.push(MdnsMessage::probe(&r));
                     r.state = ServiceState::WaitForSecondProbe;
                     timeouts.push((r.state, 250));
                 }
                 ServiceState::SecondProbe => {
                     debug!("Sending Second Probe Query for {}", r.name);
-                    queue.push(MdnsMessage::question(&r.name));
+                    queue.push(MdnsMessage::probe(&r));
                     r.state = ServiceState::WaitForAnnouncing;
                     timeouts.push((r.state, 250));
                 }
@@ -87,3 +87,6 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
         }
     }
 }
+
+#[test]
+fn test_probe() {}

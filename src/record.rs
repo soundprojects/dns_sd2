@@ -34,35 +34,52 @@ use std::fmt::Debug;
 /// ```
 #[derive(Debug)]
 pub struct ResourceRecord {
-    //NAME      a domain name to which this record pertains
-    //
-    //          is of variable length, padding is not applied
-    //          maximum length is 255 octets
-    //
-    // [RFC1035 Section 4.1.2 - Question section format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.2)
+    /// NAME     
+    ///
+    /// a domain name to which this record pertains
+    ///
+    /// is of variable length, padding is not applied
+    /// maximum length is 255 octets
+    /// ## RFC Specification
+    /// [RFC1035 Section 4.1.2 - Question section format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.2)
     pub name: String,
-    //TYPE      two octets containing one of the RR type codes.
-    //          This field specifies the meaning of the data in the RDATA field
+    /// TYPE      
+    ///
+    /// two octets containing one of the RR type codes.
+    /// This field specifies the meaning of the data in the RDATA field
     pub record_type: QType,
-    //CLASS     two octets which specify the class of the data in the
-    //          RDATA field. The first bit indicates whether to flush Cache for this record
+    /// CLASS     
+    ///
+    /// two octets which specify the class of the data in the
+    /// RDATA field. The first bit indicates whether to flush Cache for this record
     pub record_class: QClass,
+    /// CACHE FLUSH
+    ///
+    /// Whether the cache flush bit (Top bit of QClass) is set and the receiving host
+    /// should flush the caches for this record after 1 second
     pub cache_flush: bool,
-    //TTL       a 32 bit unsigned integer that specifies the time
-    //          interval (in seconds) that the resource record may be
-    //          cached before it should be discarded.  Zero values are
-    //          interpreted to mean that the RR can only be used for the
-    //          transaction in progress, and should not be cached.
+    /// TTL    
+    ///    
+    /// a 32 bit unsigned integer that specifies the time
+    /// interval (in seconds) that the resource record may be
+    /// cached before it should be discarded.  Zero values are
+    /// interpreted to mean that the RR can only be used for the
+    /// transaction in progress, and should not be cached.
     pub ttl: u32,
-    //RDLENGTH  an unsigned 16 bit integer that specifies the length in
-    //          octets of the RDATA field
+    /// RDLENGTH
+    ///
+    /// an unsigned 16 bit integer that specifies the length in
+    //  octets of the RDATA field
     pub rdlength: u16,
-    //RDATA     a variable length string of octets that describes the
-    //          resource.  The format of this information varies
-    //          according to the TYPE and CLASS of the resource record
-    //
-    //          Implementation is done through the RData trait allowing methods for packing to a byte array
-    //          See structs in the ./records folder
+    /// RDATA     
+    ///
+    /// a variable length string of octets that describes the
+    /// resource.  
+    /// The format of this information varies
+    /// according to the TYPE and CLASS of the resource record
+    ///
+    /// Implementation is done through the RData trait allowing methods for packing to a byte array
+    /// See structs in the ./records folder
     pub rdata: Option<Box<dyn RData + Send>>,
 }
 
@@ -111,6 +128,7 @@ impl ResourceRecord {
         }
     }
 
+    /// Create a 'A' type Resource Record
     pub fn create_a_record(name: String, ip: [u8; 4]) -> Self {
         let rdata = ARecord { ip };
 
@@ -130,6 +148,7 @@ impl ResourceRecord {
         }
     }
 
+    /// Create a 'AAAA' type Resource Record
     pub fn create_aaaa_record(name: String, ip: [u16; 4]) -> Self {
         let rdata = AAAARecord { ip };
 
@@ -149,6 +168,7 @@ impl ResourceRecord {
         }
     }
 
+    /// Create a 'PTR' type Resource Record
     pub fn create_ptr_record(name: String) -> Self {
         let rdata = PTRRecord { name: name.clone() };
 
@@ -168,23 +188,12 @@ impl ResourceRecord {
         }
     }
 
-    pub fn create_srv_record(
-        service: String,
-        protocol: String,
-        ttl: u32,
-        port: u16,
-        domain: String,
-        target: String,
-    ) -> Self {
+    /// Create a 'SRV' type Resource Record
+    pub fn create_srv_record(service: String, port: u16, target: String) -> Self {
         let rdata = SRVRecord {
-            service: service.clone(),
-            proto: protocol,
             priority: 0,
-            ttl,
-            class: QClass::In,
             port,
             weight: 0,
-            name: domain,
             target,
         };
 

@@ -56,36 +56,49 @@ pub struct Header {
     //          it directs the name server to pursue the query recursively. Recursive query support is optional.
     #[packed_field(bits = "23")]
     pub rd: bool,
-    //RA        Recursion Available - this is set or cleared in a response and denotes whether
-    //          recursive query support is available in the name server}
+    /// RA        
+    ///
+    /// Recursion Available - this is set or cleared in a response and denotes whether
+    /// recursive query support is available in the name server}
     #[packed_field(bits = "24")]
     pub ra: bool,
-    //Z         Reserved for future use. Must be zero in all queries and responses
+    /// Z        
+    ///
+    /// Reserved for future use. Must be zero in all queries and responses
     #[packed_field(bits = "25..=27")]
     pub z: Integer<u8, packed_bits::Bits<3>>,
-    //RCODE     Response code - this 4 but field is set as part of responses. The values have the following interpretation:
-    //          0   No error condition
-    //          1   Format error - The name server was unable to interpret the query.
-    //          2   Server failure - The name server was unable to process this query due to a problem with the name server.
-    //          3   Name error - Meaningful only for responses from an authoritative name server. This code signifies that
-    //                           domain name referenced in the query does not exist
-    //          4   Not Implemented - The name server does not support this kind of query
-    //          5   Refused - The name server refuses to perform the specified operation for policy reasons.
-    //                        For example, a name server may not wish to provide the information to the particular requester,
-    //                        or a name server may not wish to performm a particular operation (e.g. zone transfer) for particular data
-    //          6-15 Reserved for future use
+    /// RCODE     
+    /// Response code - this 4 but field is set as part of responses. The values have the following interpretation:
+    /// -0   No error condition
+    /// -1   Format error - The name server was unable to interpret the query.
+    /// -2   Server failure - The name server was unable to process this query due to a problem with the name server.
+    /// -3   Name error - Meaningful only for responses from an authoritative name server. This code signifies that
+    ///                           domain name referenced in the query does not exist
+    /// -4   Not Implemented - The name server does not support this kind of query
+    /// -5   Refused - The name server refuses to perform the specified operation for policy reasons.
+    ///                        For example, a name server may not wish to provide the information to the particular requester,
+    ///                        or a name server may not wish to performm a particular operation (e.g. zone transfer) for particular data
+    /// -6-15 Reserved for future use
     #[packed_field(bits = "28..=31", ty = "enum")]
     pub rcode: RCode,
-    //QDCOUNT   an unsigned 16 bit integer specifying the number of entries in the question section
+    /// QDCOUNT  
+    ///  
+    /// an unsigned 16 bit integer specifying the number of entries in the question section
     #[packed_field(bits = "32..=47")]
     pub qdcount: u16,
-    //ANCOUNT   an unsigned 16 bit integer specifying the nummber of entries in the answer section
+    /// ANCOUNT   
+    ///
+    /// an unsigned 16 bit integer specifying the nummber of entries in the answer section
     #[packed_field(bits = "48..=63")]
     pub ancount: u16,
-    //NSCOUNT   an unsigned 16 bit integer specifying the number of name server resource records in the authority records section
+    /// NSCOUNT   
+    ///
+    /// an unsigned 16 bit integer specifying the number of name server resource records in the authority records section
     #[packed_field(bits = "64..=79")]
     pub nscount: u16,
-    //ARCOUNT   an unsigned 16 bit integer specifying the number of resource records in the additional records section.
+    /// ARCOUNT
+    ///
+    /// an unsigned 16 bit integer specifying the number of resource records in the additional records section.
     #[packed_field(bits = "80..=95")]
     pub arcount: u16,
 }
