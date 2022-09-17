@@ -1,3 +1,5 @@
+use crate::name::Name;
+
 /// Question
 ///
 /// Note that the top bit of the QClass defines whether this question
@@ -40,7 +42,7 @@ pub struct Question {
     /// Maximum size is 255 octets
     /// ## RFC Specification
     /// [RFC1035 Section 2.3.4 - Question section format](https://www.rfc-editor.org/rfc/rfc1035#section-2.3.4)
-    pub name: String,
+    pub name: Name,
     /// Type
     ///
     /// Defines what type of resource the question is asking for
@@ -64,14 +66,7 @@ impl Question {
         let mut bytes: Vec<u8> = vec![];
 
         //NAME
-        let labels = self.name.split('.');
-
-        for label in labels {
-            bytes.push(label.len() as u8);
-            bytes.extend(label.as_bytes());
-        }
-        //Name is terminated by a zero octet
-        bytes.push(0);
+        bytes.extend(self.name.to_bytes());
 
         //TYPE
         bytes.extend((self.qtype as u16).to_be_bytes());

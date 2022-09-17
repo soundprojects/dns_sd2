@@ -62,18 +62,27 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
             //STATE MANAGEMENT
             match r.state {
                 ServiceState::Prelude => {
-                    debug!("Adding Timeout for Probing {}", r.name);
+                    debug!(
+                        "Adding Timeout for Probing {}.{}.{}.local",
+                        r.host, r.service, r.protocol
+                    );
                     r.state = ServiceState::WaitForFirstProbe;
                     timeouts.push((r.state, thread_rng().gen_range(0..250)));
                 }
                 ServiceState::FirstProbe => {
-                    debug!("Sending Probe Query for {}", r.name);
+                    debug!(
+                        "Sending Probe Query for {}.{}.{}.local",
+                        r.host, r.service, r.protocol
+                    );
                     queue.push(MdnsMessage::probe(&r));
                     r.state = ServiceState::WaitForSecondProbe;
                     timeouts.push((r.state, 250));
                 }
                 ServiceState::SecondProbe => {
-                    debug!("Sending Second Probe Query for {}", r.name);
+                    debug!(
+                        "Sending second Probe Query for {}.{}.{}.local",
+                        r.host, r.service, r.protocol
+                    );
                     queue.push(MdnsMessage::probe(&r));
                     r.state = ServiceState::WaitForAnnouncing;
                     timeouts.push((r.state, 250));

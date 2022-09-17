@@ -30,11 +30,21 @@ pub trait Handler<'a> {
 }
 
 #[derive(Debug)]
+/// Event Enumerator
+///
+/// Possible message types that are passed into the chain of handlers
+/// They either pass elapsed times, close signals or messages that have arrived on the socket
 pub enum Event {
+    /// Message Enum containing an MdnsMessage
     Message(MdnsMessage),
+    /// Time Elapsed, containing the Service State waiting for this timeout and the elapsed time
     TimeElapsed((ServiceState, u64)),
+    /// TTL signal to update TTL (Each second)
     Ttl(),
+    /// Close Signal
     Closing(),
+    /// Browse Command, contains service string. e.g. '_myservice._udp._local'
     Browse(String),
-    Register(String, Vec<String>),
+    /// Register Command, contains
+    Register(String, String, String, u16, Vec<String>),
 }

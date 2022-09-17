@@ -1,5 +1,6 @@
 use crate::{
     header::Header,
+    name::Name,
     question::{QClass, QType, Question},
     record::ResourceRecord,
     service::Service,
@@ -105,34 +106,106 @@ impl MdnsMessage {
     pub fn probe(service: &Service) -> MdnsMessage {
         let mut message = MdnsMessage::default();
         message.questions.push(Question {
-            name: service.name.to_string(),
+            name: Name::new(service.host.clone() + ".local").expect("Should be valid"),
             qtype: QType::Any,
             qclass: QClass::Any,
             unicast_question: true,
         });
         message.header.qdcount = 1;
-        message
-    }
-
-    pub fn response(service: &Service) -> MdnsMessage {
-        let mut message = MdnsMessage::default();
-
-        message.header.qr = true;
 
         let srv = ResourceRecord::create_srv_record(
-            service.name.clone(),
-            53000,
-            "MyMachine.local".to_string(),
+            service.host.clone() + "." + &service.service + "." + &service.protocol + ".local",
+            service.port,
+            service.host.clone() + ".local",
         );
 
-        let mut a = ResourceRecord::create_a_record(service.name.clone(), [192, 168, 1, 123]);
-        a.cache_flush = true;
+        let a = ResourceRecord::create_a_record(
+            Name::new(service.host.clone() + ".local").expect("Should be valid"),
+            [192, 168, 1, 123],
+        );
 
         message.authorities.push(srv);
 
         message.authorities.push(a);
 
         message.header.nscount = 2;
+
+        message
+    }
+
+    pub fn announce(service: &Service) -> MdnsMessage {
+        let mut message = MdnsMessage::default();
+
+        message.header.qr = true;
+        message.header.aa = true;
+
+        let ptr = ResourceRecord::create_ptr_record(
+            service.host.clone(),
+            service.service.clone(),
+            service.protocol.clone(),
+        );
+
+        let mut srv = ResourceRecord::create_srv_record(
+            service.host.clone() + "." + &service.service + "." + &service.protocol + ".local",
+            service.port,
+            service.host.clone() + ".local",
+        );
+
+        srv.cache_flush = true;
+
+        let mut a = ResourceRecord::create_a_record(
+            Name::new(service.host.clone() + ".local").expect("Should be valid"),
+            [192, 168, 178, 19],
+        );
+
+        a.cache_flush = true;
+
+        message.answers.push(ptr);
+
+        message.answers.push(srv);
+
+        message.answers.push(a);
+
+        message.header.ancount = 3;
+
+        message
+    }
+
+    pub fn goodbye(service: &Service) -> MdnsMessage {
+        let mut message = MdnsMessage::default();
+
+        message.header.qr = true;
+        message.header.aa = true;
+
+        let mut ptr = ResourceRecord::create_ptr_record(
+            service.host.clone(),
+            service.service.clone(),
+            service.protocol.clone(),
+        );
+
+        ptr.ttl = 0;
+        let mut srv = ResourceRecord::create_srv_record(
+            service.host.clone() + "." + &service.service + "." + &service.protocol + ".local",
+            service.port,
+            service.host.clone() + ".local",
+        );
+
+        srv.ttl = 0;
+
+        let mut a = ResourceRecord::create_a_record(
+            Name::new(service.host.clone() + ".local").expect("Should be valid"),
+            [192, 168, 178, 19],
+        );
+
+        a.ttl = 0;
+
+        message.answers.push(ptr);
+
+        message.answers.push(srv);
+
+        message.answers.push(a);
+
+        message.header.ancount = 3;
 
         message
     }

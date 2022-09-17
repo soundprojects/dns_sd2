@@ -1,6 +1,7 @@
 use packed_struct::PackedStruct;
 
 use crate::{
+    name::Name,
     question::{QClass, QType},
     records::{a::ARecord, aaaa::AAAARecord, ptr::PTRRecord, srv::SRVRecord},
 };
@@ -42,7 +43,7 @@ pub struct ResourceRecord {
     /// maximum length is 255 octets
     /// ## RFC Specification
     /// [RFC1035 Section 4.1.2 - Question section format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.2)
-    pub name: String,
+    pub name: Name,
     /// TYPE      
     ///
     /// two octets containing one of the RR type codes.
@@ -90,12 +91,7 @@ impl ResourceRecord {
             let mut bytes = vec![];
 
             //NAME
-            bytes.push(self.name.len() as u8);
-            bytes.extend(self.name.as_bytes());
-
-            //Name is terminated by a zero length Octet
-            //[RFC1035 Section 4.1.2 - Question section format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.2)
-            bytes.push(0);
+            bytes.extend(self.name.to_bytes());
 
             //TYPE
             bytes.extend((self.record_type as u16).to_be_bytes());
@@ -129,7 +125,7 @@ impl ResourceRecord {
     }
 
     /// Create a 'A' type Resource Record
-    pub fn create_a_record(name: String, ip: [u8; 4]) -> Self {
+    pub fn create_a_record(name: Name, ip: [u8; 4]) -> Self {
         let rdata = ARecord { ip };
 
         let rdata_packed = rdata.pack().expect("Packing A record failed");
@@ -139,7 +135,7 @@ impl ResourceRecord {
             record_type: QType::A,
             record_class: QClass::In,
             cache_flush: false,
-            ttl: 120,
+            ttl: 60,
             rdlength: rdata_packed
                 .len()
                 .try_into()
@@ -149,7 +145,7 @@ impl ResourceRecord {
     }
 
     /// Create a 'AAAA' type Resource Record
-    pub fn create_aaaa_record(name: String, ip: [u16; 4]) -> Self {
+    pub fn create_aaaa_record(name: Name, ip: [u16; 4]) -> Self {
         let rdata = AAAARecord { ip };
 
         let rdata_packed = rdata.pack().expect("Packing AAAA record failed");
@@ -169,17 +165,20 @@ impl ResourceRecord {
     }
 
     /// Create a 'PTR' type Resource Record
-    pub fn create_ptr_record(name: String) -> Self {
-        let rdata = PTRRecord { name: name.clone() };
+    pub fn create_ptr_record(host: String, service: String, protocol: String) -> Self {
+        let rdata = PTRRecord {
+            name: Name::new(host.clone() + "." + &service + "." + &protocol + ".local")
+                .expect("Should be valid"),
+        };
 
         let rdata_packed = rdata.to_bytes();
 
         ResourceRecord {
-            name,
+            name: Name::new(service + "." + &protocol + ".local").expect("Should be valid"),
             record_type: QType::Ptr,
             record_class: QClass::In,
             cache_flush: false,
-            ttl: 4500,
+            ttl: 60,
             rdlength: rdata_packed
                 .len()
                 .try_into()
@@ -194,16 +193,16 @@ impl ResourceRecord {
             priority: 0,
             port,
             weight: 0,
-            target,
+            target: Name::new(target).expect("Should be valid"),
         };
 
         let rdata_packed = rdata.to_bytes();
         ResourceRecord {
-            name: service,
+            name: Name::new(service).expect("Should be valid"),
             record_type: QType::Srv,
             record_class: QClass::In,
             cache_flush: false,
-            ttl: 120,
+            ttl: 60,
             rdlength: rdata_packed
                 .len()
                 .try_into()

@@ -1,4 +1,4 @@
-use crate::record::RData;
+use crate::{name::Name, record::RData};
 /// SRV Resource Record
 ///
 ///
@@ -17,7 +17,7 @@ pub struct SRVRecord {
     pub port: u16,
     //Target   The domain name of the target host. There MUST be one or more address records for this name and this name
     //         cannot be an alias. For example 'MyMac.local'
-    pub target: String,
+    pub target: Name,
 }
 
 impl RData for SRVRecord {
@@ -34,8 +34,7 @@ impl RData for SRVRecord {
         bytes.extend(self.port.to_be_bytes());
 
         //TARGET
-        bytes.push(self.target.len() as u8);
-        bytes.extend(self.target.as_bytes());
+        bytes.extend(self.target.to_bytes());
 
         bytes
     }

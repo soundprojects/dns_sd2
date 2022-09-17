@@ -36,12 +36,18 @@ impl<'a> Handler<'a> for RegisterHandler<'a> {
         queue: &mut Vec<MdnsMessage>,
     ) {
         match event {
-            Event::Register(n, t) => {
-                debug!("Added new Registration {} with txt_records {:?}", n, t);
+            Event::Register(host, service, protocol, port, txt_records) => {
+                debug!(
+                    "Added new Registration {}.{}.{}.local on port {} with txt_records {:?}",
+                    host, service, protocol, port, txt_records
+                );
 
                 *registration = Some(Service {
-                    name: n.to_string(),
-                    txt_records: t.to_vec(),
+                    host: host.to_string(),
+                    service: service.to_string(),
+                    protocol: protocol.to_string(),
+                    port: port.to_owned(),
+                    txt_records: txt_records.to_vec(),
                     ..Default::default()
                 });
             }

@@ -26,34 +26,46 @@ use packed_struct::prelude::*;
 #[derive(PackedStruct, Default, Clone, Debug)]
 #[packed_struct(endian = "msb", bit_numbering = "msb0")]
 pub struct Header {
-    //ID        A 16 bit identifier assigned by the program that generates any kind of query
-    //          This identifier is copied to the corresponding reply and can be used by the requester
-    //          to match up replies to outstanding queries
+    /// ID
+    ///        
+    /// A 16 bit identifier assigned by the program that generates any kind of query
+    /// This identifier is copied to the corresponding reply and can be used by the requester
+    /// to match up replies to outstanding queries
     #[packed_field(bits = "0..=15")]
     pub id: u16,
-    //QR        A one bit field that specifies whether this message is a query (false) or a response (true)
+    /// QR        
+    ///
+    /// A one bit field that specifies whether this message is a query (false) or a response (true)
     #[packed_field(bits = "16")]
     pub qr: bool,
-    //OPCODE    A four bit field that specifies kind of query in this message. This value is set by the originator of a query
-    //          and is copied into the response. The values are:
-    //          0       a standard query (QUERY)
-    //          1       an inverse query (IQUERY)
-    //          2       a server status request (STATUS)
-    //          3-15    for future use
+    /// OPCODE
+    ///    
+    /// A four bit field that specifies kind of query in this message. This value is set by the originator of a query
+    /// and is copied into the response. The values are:
+    /// 0       a standard query (QUERY)
+    /// 1       an inverse query (IQUERY)
+    /// 2       a server status request (STATUS)
+    /// 3-15    for future use
     #[packed_field(bits = "17..=20", ty = "enum")]
     pub opcode: OpCode,
-    //AA        Authoritative Answer - this bit is valid in responses,
-    //          and specifies that the responding name server is an authority for the domain name in question
-    //          Note that the contents of the answer section may have multiple owner names because of aliases
-    //          The AA bit corresponds to the name which matches the query name, or the first owner name in the answer section
+    /// AA        
+    ///
+    /// Authoritative Answer - this bit is valid in responses,
+    /// and specifies that the responding name server is an authority for the domain name in question
+    /// Note that the contents of the answer section may have multiple owner names because of aliases
+    /// The AA bit corresponds to the name which matches the query name, or the first owner name in the answer section
     #[packed_field(bits = "21")]
     pub aa: bool,
-    //TC        TrunCation - Specifies that this message was truncated due to length greater than that permitted
-    //          on the transmission channel
+    /// TC
+    ///        
+    /// TrunCation - Specifies that this message was truncated due to length greater than that permitted
+    /// on the transmission channel
     #[packed_field(bits = "22")]
     pub tc: bool,
-    //RD        Recursion Desired - This bit may be set in a query and is copied into the response. If RD is set,
-    //          it directs the name server to pursue the query recursively. Recursive query support is optional.
+    /// RD
+    ///         
+    /// Recursion Desired - This bit may be set in a query and is copied into the response. If RD is set,
+    /// it directs the name server to pursue the query recursively. Recursive query support is optional.
     #[packed_field(bits = "23")]
     pub rd: bool,
     /// RA        

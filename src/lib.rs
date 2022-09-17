@@ -30,6 +30,7 @@ const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 
 pub mod header;
 pub mod message;
+pub mod name;
 pub mod protocols;
 pub mod question;
 pub mod record;
@@ -146,16 +147,19 @@ impl<'a> DnsSd2 {
     /// ```
     pub async fn register(
         &mut self,
-        name: String,
+        host: String,
+        service: String,
+        protocol: String,
+        port: u16,
         txt_records: Vec<String>,
     ) -> impl Stream<Item = Result<Service, MdnsError>> + '_ {
         debug!(
-            "Register Service {} with TXT Records {:?}",
-            name, txt_records
+            "Register Service {}.{}.{}.local with port {} with TXT Records {:?}",
+            host, service, protocol, port, txt_records
         );
 
         self.tx
-            .send(Event::Register(name, txt_records))
+            .send(Event::Register(host, service, protocol, port, txt_records))
             .expect("Failed to send with Tx");
 
         self.init().await
@@ -224,22 +228,30 @@ impl<'a> DnsSd2 {
 
                 loop {
                     let result = select! {
+                        //Received a message on the Socket
                         _ = frame.next() => {
                             Event::Message(MdnsMessage::default())
                         }
+                        //Received a Service/Browse Command from the client
                         c = self.rx.recv() => {
                             let s = Service::default();
                             debug!("M");
                             yield s;
                             c.expect("Should contain an Event")
                         }
+                        //Close signal handler
+                        _close = tokio::signal::ctrl_c() => {
+                            debug!("Ctrl C! Closing");
+                            Event::Closing()
+                        }
+                        //A dynamic timeout has finished
                         t = timeouts.next(), if !timeouts.is_empty() => {
                             debug!("Timed out for {:?} ms", t);
                             Event::TimeElapsed(t.unwrap_or_default())
                         }
+                        //TTL 1s timer has ticked
                         _ = interval.tick() => {
                             Event::Ttl()
-
                         }
                     };
 
@@ -259,6 +271,9 @@ impl<'a> DnsSd2 {
                     for message in queue{
                         send_message(&mut frame, &message).await.expect("Should send Message");
                     }
+
+                    //If the result is Closing() return
+                    if matches!(result, Event::Closing()){return}
                 }
         }
     }

@@ -31,10 +31,11 @@ impl<'a> Handler<'a> for GoodbyeHandler<'a> {
         timeouts: &mut Vec<(ServiceState, u64)>,
         queue: &mut Vec<MdnsMessage>,
     ) {
-        if let Some(_r) = registration {
+        if let Some(r) = registration {
             match event {
                 Event::Closing() => {
                     info!("CLOSING!");
+                    queue.push(MdnsMessage::goodbye(&r));
                 }
                 _ => {}
             }

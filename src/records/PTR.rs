@@ -1,4 +1,4 @@
-use crate::record::RData;
+use crate::{name::Name, record::RData};
 
 /// PTR Resource Record
 ///
@@ -9,11 +9,16 @@ use crate::record::RData;
 pub struct PTRRecord {
     //Name     A <domain-name> which points to some location in the domain name space
     //         Requires no additional record processing
-    pub name: String,
+    pub name: Name,
 }
 
 impl RData for PTRRecord {
     fn to_bytes(&self) -> Vec<u8> {
-       self.name.as_bytes().to_vec()
+        let mut bytes: Vec<u8> = vec![];
+
+        //Name
+        bytes.extend(self.name.to_bytes());
+
+        bytes
     }
 }
