@@ -33,7 +33,7 @@ use crate::{message::MdnsMessage, MdnsError, IP_ANY};
 /// This will mean that `check_unique_responder()` will return `Err("Address is already taken")`
 ///
 /// ```rust,no_run
-/// use dns_sd2::check_unique_responder;
+/// use dns_sd2::utility::check_unique_responder;
 ///
 /// #[tokio::main]
 /// async fn main(){
@@ -127,7 +127,7 @@ pub fn create_socket() -> io::Result<UdpSocket> {
 ///
 /// use std::net::Ipv4Addr;
 ///
-/// use dns_sd2::is_reachable_ipv4;
+/// use dns_sd2::utility::is_reachable_ipv4;
 ///
 /// assert!(is_reachable_ipv4(&Ipv4Addr::new(192,168,1,1), &Ipv4Addr::new(255,255,255,0), &Ipv4Addr::new(192,168,1,30)));
 ///
@@ -167,7 +167,7 @@ pub fn is_reachable_ipv4(host_ip: &Ipv4Addr, host_subnet: &Ipv4Addr, source_ip: 
 ///
 /// use std::net::Ipv6Addr;
 ///
-/// use dns_sd2::is_reachable_ipv6;
+/// use dns_sd2::utility::is_reachable_ipv6;
 ///
 /// assert!(is_reachable_ipv6(&Ipv6Addr::new(0xfd48,0xa12f,0x7b0c,0x3da8,0,0,0,0), &Ipv6Addr::new(0xffff,0xffff,0xffff,0xffff,0,0,0,0), &Ipv6Addr::new(0xfd48,0xa12f,0x7b0c,0x3da8,0,0,0,0xabcd)));
 ///
