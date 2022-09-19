@@ -34,7 +34,7 @@ impl<'a> Handler<'a> for GoodbyeHandler<'a> {
         if let Some(r) = registration {
             match event {
                 Event::Closing() => {
-                    info!("CLOSING!");
+                    info!("Sending Goodbye Packets!");
                     queue.push(MdnsMessage::goodbye(&r));
                 }
                 _ => {}
