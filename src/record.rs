@@ -13,7 +13,7 @@ use std::fmt::Debug;
 /// - [RFC1035 Section 4.1.3 - Resource record format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.3)
 ///
 /// ## Bit Layout
-/// ```no_run
+/// ```ignore
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 /// |                                               |
 /// /                                               /

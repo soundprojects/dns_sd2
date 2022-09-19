@@ -6,7 +6,7 @@ use packed_struct::prelude::*;
 /// Uses [`PackedStruct`] for packing with bit layout as shown below:
 ///
 /// ## Bit Layout
-/// ```no_run
+/// ```ignore
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 /// |                      ID                       |
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+

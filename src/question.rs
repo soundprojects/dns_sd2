@@ -17,7 +17,7 @@ use crate::name::Name;
 /// [RFC1035 Section 4.1.2 - Question section format](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.2)
 ///
 /// ## Bit Layout
-/// ```no_run
+/// ```ignore
 /// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 /// |                                               |
 /// /                     QNAME                     /

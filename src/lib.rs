@@ -133,7 +133,7 @@ impl<'a> DnsSd2 {
     ///
     /// ## Example
     ///
-    /// ```rust, no_run
+    /// ```rust, ignore
     /// use dns_sd2::Dns_Sd2;
     ///
     /// let stream = client.register("_myservice._udp.local".into(), vec![]).await;
@@ -169,7 +169,7 @@ impl<'a> DnsSd2 {
     ///
     /// ## Example
     ///
-    /// ```rust, no_run
+    /// ```rust, ignore
     /// use dns_sd2::Dns_Sd2;
     ///
     /// let stream = client.browse("_services._udp.local".into()).await;
