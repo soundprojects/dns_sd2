@@ -58,3 +58,44 @@ impl<'a> Handler<'a> for RegisterHandler<'a> {
         }
     }
 }
+
+#[test]
+fn test_registration_handler() {
+    //Mock Registration
+    let host: String = "TestMachine".into();
+    let service: String = "_test".into();
+    let protocol: String = "_tcp".into();
+    let port = 53000;
+    let txt_records: Vec<String> = vec![];
+
+    let event = Event::Register(
+        host.clone(),
+        service.clone(),
+        protocol.clone(),
+        port.clone(),
+        txt_records.clone(),
+    );
+
+    let handler = RegisterHandler::default();
+
+    let mut registration = None;
+
+    //Pass Registration into Handler
+    handler.handle(
+        &event,
+        &mut vec![],
+        &mut registration,
+        &mut None,
+        &mut vec![],
+        &mut vec![],
+    );
+
+    assert!(registration.is_some());
+
+    let result = registration.unwrap();
+    assert_eq!(result.host, host);
+    assert_eq!(result.service, service);
+    assert_eq!(result.protocol, protocol);
+    assert_eq!(result.txt_records, txt_records);
+    assert_eq!(result.state, ServiceState::Prelude);
+}
