@@ -98,4 +98,49 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
 }
 
 #[test]
-fn test_probe() {}
+fn test_probe_handler() {
+    //Mock Service
+    //Result if Registration Handler worked properly
+    let service = Service {
+        host: "TestMachine".into(),
+        service: "_test".into(),
+        protocol: "_tcp".into(),
+        port: 53000,
+        txt_records: vec![],
+        state: ServiceState::Prelude,
+    };
+
+    let handler = ProbeHandler::default();
+
+    //Pass into Handler
+    //Step 1: Should add first timeout with interval 0-250 ms
+    let mut timeouts = vec![];
+
+    handler.handle(
+        &Event::Ttl(),
+        &mut vec![],
+        &mut Some(service.clone()),
+        &mut None,
+        &mut timeouts,
+        &mut vec![],
+    );
+
+    assert_eq!(timeouts.len(), 1);
+    assert!(timeouts[0].1 > 0);
+    assert!(timeouts[0].1 < 250);
+    assert_eq!(timeouts[0].0, ServiceState::WaitForFirstProbe);
+
+    timeouts.clear();
+
+    //Step 2: First probe finished change state
+    handler.handle(
+        &Event::TimeElapsed((ServiceState::WaitForFirstProbe, 250)),
+        &mut vec![],
+        &mut Some(service),
+        &mut None,
+        &mut timeouts,
+        &mut vec![],
+    );
+
+    assert_eq!(service.state, ServiceState::FirstProbe);
+}
