@@ -73,7 +73,7 @@ pub struct DnsSd2 {
     records: Vec<ResourceRecord>,
     registration: Option<Service>,
     query: Option<Query>,
-    tx: UnboundedSender<Event>,
+    pub tx: UnboundedSender<Event>,
     rx: UnboundedReceiver<Event>,
 }
 
@@ -163,6 +163,10 @@ impl<'a> DnsSd2 {
             .expect("Failed to send with Tx");
 
         self.init().await
+    }
+
+    pub fn update(&self) {
+        debug!("Updated HERE");
     }
 
     /// Browse for an Mdns [`Service`]
@@ -259,6 +263,7 @@ impl<'a> DnsSd2 {
                     let mut new_timeouts = vec![];
                     let mut queue = vec![];
 
+                    Err(MdnsError::Closing{})?;
                     //Execute the chain
                     self.handle(&register_handler, &result, &mut new_timeouts, &mut queue);
 
