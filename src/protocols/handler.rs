@@ -1,4 +1,6 @@
-use crate::{message::MdnsMessage, record::ResourceRecord, service::ServiceState, Query, Service};
+use crate::{
+    message::MdnsMessage, record::ResourceRecord, service::ServiceState, MdnsError, Query, Service,
+};
 
 /// Chain of Responsibility Handler
 ///
@@ -26,7 +28,7 @@ pub trait Handler<'a> {
         query: &mut Option<Query>,
         timeouts: &mut Vec<(ServiceState, u64)>,
         queue: &mut Vec<MdnsMessage>,
-    );
+    ) -> Result<(), MdnsError>;
 }
 
 #[derive(Debug)]

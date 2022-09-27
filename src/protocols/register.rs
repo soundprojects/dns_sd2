@@ -1,4 +1,6 @@
-use crate::{message::MdnsMessage, record::ResourceRecord, service::ServiceState, Query, Service};
+use crate::{
+    message::MdnsMessage, record::ResourceRecord, service::ServiceState, MdnsError, Query, Service,
+};
 
 use super::handler::{Event, Handler};
 
@@ -34,7 +36,7 @@ impl<'a> Handler<'a> for RegisterHandler<'a> {
         query: &mut Option<Query>,
         timeouts: &mut Vec<(ServiceState, u64)>,
         queue: &mut Vec<MdnsMessage>,
-    ) {
+    ) -> Result<(), MdnsError> {
         match event {
             Event::Register(host, service, protocol, port, txt_records) => {
                 debug!(
@@ -54,8 +56,10 @@ impl<'a> Handler<'a> for RegisterHandler<'a> {
             _ => {}
         }
         if let Some(v) = &self.next {
-            v.handle(event, records, registration, query, timeouts, queue);
+            v.handle(event, records, registration, query, timeouts, queue)?;
         }
+
+        Ok(())
     }
 }
 
@@ -81,14 +85,16 @@ fn test_registration_handler() {
     let mut registration = None;
 
     //Pass Registration into Handler
-    handler.handle(
-        &event,
-        &mut vec![],
-        &mut registration,
-        &mut None,
-        &mut vec![],
-        &mut vec![],
-    );
+    handler
+        .handle(
+            &event,
+            &mut vec![],
+            &mut registration,
+            &mut None,
+            &mut vec![],
+            &mut vec![],
+        )
+        .unwrap();
 
     assert!(registration.is_some());
 

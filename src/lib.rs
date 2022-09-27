@@ -102,11 +102,14 @@ impl Drop for DnsSd2 {
 
         let mut queue = vec![];
 
-        self.handle(&handler, &Event::Closing(), &mut vec![], &mut queue);
-
-        //Note: We block here because Drop must be synchronous
-        for message in queue {
-            block_on(send_message(&mut frame, &message)).expect("Failed to send goodbye");
+        if self
+            .handle(&handler, &Event::Closing(), &mut vec![], &mut queue)
+            .is_ok()
+        {
+            //Note: We block here because Drop must be synchronous
+            for message in queue {
+                block_on(send_message(&mut frame, &message)).expect("Failed to send goodbye");
+            }
         }
     }
 }
@@ -118,7 +121,7 @@ impl<'a> DnsSd2 {
         event: &Event,
         timeouts: &mut Vec<(ServiceState, u64)>,
         queue: &mut Vec<MdnsMessage>,
-    ) {
+    ) -> Result<(), MdnsError> {
         h.handle(
             event,
             &mut self.records,
@@ -126,7 +129,8 @@ impl<'a> DnsSd2 {
             &mut self.query,
             timeouts,
             queue,
-        );
+        )?;
+        Ok(())
     }
 
     /// Registers an Mdns [`Service`]
@@ -263,9 +267,9 @@ impl<'a> DnsSd2 {
                     let mut new_timeouts = vec![];
                     let mut queue = vec![];
 
-                    Err(MdnsError::Closing{})?;
+
                     //Execute the chain
-                    self.handle(&register_handler, &result, &mut new_timeouts, &mut queue);
+                    self.handle(&register_handler, &result, &mut new_timeouts, &mut queue)?;
 
                     //Add the resulting timeouts from the chain to our dynamic interval futures
                     for (s, t) in new_timeouts {

@@ -1,5 +1,7 @@
 use super::handler::{Event, Handler};
-use crate::{message::MdnsMessage, record::ResourceRecord, service::ServiceState, Query, Service};
+use crate::{
+    message::MdnsMessage, record::ResourceRecord, service::ServiceState, MdnsError, Query, Service,
+};
 use rand::{thread_rng, Rng};
 
 /// Probe MDNS Service
@@ -38,7 +40,7 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
         query: &mut Option<Query>,
         timeouts: &mut Vec<(ServiceState, u64)>,
         queue: &mut Vec<MdnsMessage>,
-    ) {
+    ) -> Result<(), MdnsError> {
         if let Some(r) = registration {
             //TIMEOUTS
             match event {
@@ -92,8 +94,10 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
         }
 
         if let Some(v) = &self.next {
-            v.handle(event, records, registration, query, timeouts, queue);
+            v.handle(event, records, registration, query, timeouts, queue)?;
         }
+
+        Ok(())
     }
 }
 
@@ -116,14 +120,16 @@ fn test_probe_handler() {
     //Step 1: Should add first timeout with interval 0-250 ms
     let mut timeouts = vec![];
 
-    handler.handle(
-        &Event::Ttl(),
-        &mut vec![],
-        &mut Some(service.clone()),
-        &mut None,
-        &mut timeouts,
-        &mut vec![],
-    );
+    handler
+        .handle(
+            &Event::Ttl(),
+            &mut vec![],
+            &mut Some(service.clone()),
+            &mut None,
+            &mut timeouts,
+            &mut vec![],
+        )
+        .unwrap();
 
     assert_eq!(timeouts.len(), 1);
     assert!(timeouts[0].1 > 0);
@@ -133,14 +139,16 @@ fn test_probe_handler() {
     timeouts.clear();
 
     //Step 2: First probe finished change state
-    handler.handle(
-        &Event::TimeElapsed((ServiceState::WaitForFirstProbe, 250)),
-        &mut vec![],
-        &mut Some(service),
-        &mut None,
-        &mut timeouts,
-        &mut vec![],
-    );
+    handler
+        .handle(
+            &Event::TimeElapsed((ServiceState::WaitForFirstProbe, 250)),
+            &mut vec![],
+            &mut Some(service.clone()),
+            &mut None,
+            &mut timeouts,
+            &mut vec![],
+        )
+        .unwrap();
 
     assert_eq!(service.state, ServiceState::FirstProbe);
 }
