@@ -10,7 +10,7 @@
 /// Txt Records | Vec<String> | Txt Records in the format of `key=value`
 /// State | [`ServiceState`] | State of the Service
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Service {
     /// Host name (e.g. 'MyMachine')
     pub host: String,
