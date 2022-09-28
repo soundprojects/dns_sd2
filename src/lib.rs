@@ -21,7 +21,6 @@ use tokio_util::{codec::BytesCodec, udp::UdpFramed};
 use crate::{
     protocols::{
         announce::AnnouncementHandler, goodbye_packet::GoodbyeHandler, probe::ProbeHandler,
-        register::RegisterHandler,
     },
     utility::{create_socket, send_message},
 };
@@ -46,6 +45,10 @@ pub enum MdnsError {
         #[from]
         source: io::Error,
     },
+    #[error("Service name is already taken")]
+    NameAlreadyTaken {},
+    #[error("Service was removed")]
+    ServiceRemoved {},
     #[error("Closing")]
     Closing {},
 }
@@ -71,7 +74,7 @@ pub enum MdnsError {
 /// ```
 pub struct DnsSd2 {
     records: Vec<ResourceRecord>,
-    registration: Option<Service>,
+    registration: Option<&'static mut Service>,
     query: Option<Query>,
     pub tx: UnboundedSender<Event>,
     rx: UnboundedReceiver<Event>,
@@ -92,6 +95,11 @@ impl Default for DnsSd2 {
 }
 
 impl Drop for DnsSd2 {
+    /// Drop DnsSd2
+    ///
+    /// When dropped or when receiving [`Event::Closing{}`]
+    /// Sends out Goodbye Packets if client initiated with [`DnsSd2::register()`]
+    /// To properly unregister a [`Service`] on the network
     fn drop(&mut self) {
         debug!("Dropping DnsSd2");
         let handler = GoodbyeHandler::default();
@@ -115,6 +123,13 @@ impl Drop for DnsSd2 {
 }
 
 impl<'a> DnsSd2 {
+    /// Runs Chain of Responsibility for this client
+    ///
+    /// This function is called in the [`DnsSd2::init()`] loop
+    /// Each part of the chain handles a different part of the MDNS Protocol
+    ///
+    /// Should return `Ok(())` or it propogates an [`MdnsError`]
+    /// Mutates records, registration, query and timeouts depending on Handler input
     pub fn handle<T: Handler<'a>>(
         &mut self,
         h: &T,
@@ -219,7 +234,6 @@ impl<'a> DnsSd2 {
                 let mut frame = UdpFramed::new(udp_socket, BytesCodec::new());
 
                 //Chain of responsibility
-                let mut register_handler = RegisterHandler::default();
                 let mut probe_handler = ProbeHandler::default();
                 let mut announcement_handler = AnnouncementHandler::default();
                 let goodbye_handler = GoodbyeHandler::default();
@@ -227,7 +241,7 @@ impl<'a> DnsSd2 {
                 //Set Chain Order from back to front
                 announcement_handler.set_next(&goodbye_handler);
                 probe_handler.set_next(&announcement_handler);
-                register_handler.set_next(&probe_handler);
+
 
                 //Collection of timer futures
                 let mut timeouts = FuturesUnordered::new();
@@ -240,12 +254,9 @@ impl<'a> DnsSd2 {
                         _ = frame.next() => {
                             Event::Message(MdnsMessage::default())
                         }
-                        //Received a Service/Browse Command from the client
+                        //Received a Command from the client
                         c = self.rx.recv() => {
-                            let s = Service::default();
-                            debug!("M");
-                            yield s;
-                            c.expect("Should contain an Event")
+                            c.expect("Should contain a Command")
                         }
                         //Close signal handler
                         _close = tokio::signal::ctrl_c() => {
@@ -263,13 +274,25 @@ impl<'a> DnsSd2 {
                         }
                     };
 
+                    //Check for specific command or signals
+                    match &result{
+                        Event::Register(host, service, protocol, port, txt_records) => {
+                            self.registration = Some(Service{host, service, protocol, port, txt_records})
+                        }
+                        Event::Closing{} => {return}
+                        _ => {}
+                    }
+
                     //Fill a Vec with new timeouts and a Vec with a queue of messages we will send with the socket
                     let mut new_timeouts = vec![];
                     let mut queue = vec![];
 
 
                     //Execute the chain
-                    self.handle(&register_handler, &result, &mut new_timeouts, &mut queue)?;
+                    self.handle(&probe_handler, &result, &mut new_timeouts, &mut queue)?;
+
+                    let s = Service::default();
+                    yield s;
 
                     //Add the resulting timeouts from the chain to our dynamic interval futures
                     for (s, t) in new_timeouts {
@@ -281,8 +304,8 @@ impl<'a> DnsSd2 {
                         send_message(&mut frame, &message).await.expect("Should send Message");
                     }
 
-                    //If the result is Closing() return
-                    if matches!(result, Event::Closing()){return}
+
+
                 }
         }
     }

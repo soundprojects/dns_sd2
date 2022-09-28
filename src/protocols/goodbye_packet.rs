@@ -28,7 +28,7 @@ impl<'a> Handler<'a> for GoodbyeHandler<'a> {
         &self,
         event: &Event,
         records: &mut Vec<ResourceRecord>,
-        registration: &mut Option<Service>,
+        registration: &mut Option<&mut Service>,
         query: &mut Option<Query>,
         timeouts: &mut Vec<(ServiceState, u64)>,
         queue: &mut Vec<MdnsMessage>,

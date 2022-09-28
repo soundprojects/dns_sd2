@@ -36,7 +36,7 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
         &self,
         event: &Event,
         records: &mut Vec<ResourceRecord>,
-        registration: &mut Option<Service>,
+        registration: &mut Option<&mut Service>,
         query: &mut Option<Query>,
         timeouts: &mut Vec<(ServiceState, u64)>,
         queue: &mut Vec<MdnsMessage>,
@@ -105,7 +105,7 @@ impl<'a> Handler<'a> for ProbeHandler<'a> {
 fn test_probe_handler() {
     //Mock Service
     //Result if Registration Handler worked properly
-    let service = Service {
+    let mut service = Service {
         host: "TestMachine".into(),
         service: "_test".into(),
         protocol: "_tcp".into(),
@@ -124,7 +124,7 @@ fn test_probe_handler() {
         .handle(
             &Event::Ttl(),
             &mut vec![],
-            &mut Some(service.clone()),
+            &mut Some(&mut service),
             &mut None,
             &mut timeouts,
             &mut vec![],
@@ -139,11 +139,12 @@ fn test_probe_handler() {
     timeouts.clear();
 
     //Step 2: First probe finished change state
+    service.state = ServiceState::WaitForFirstProbe;
     handler
         .handle(
             &Event::TimeElapsed((ServiceState::WaitForFirstProbe, 250)),
             &mut vec![],
-            &mut Some(service.clone()),
+            &mut Some(&mut service),
             &mut None,
             &mut timeouts,
             &mut vec![],
@@ -151,4 +152,23 @@ fn test_probe_handler() {
         .unwrap();
 
     assert_eq!(service.state, ServiceState::FirstProbe);
+    timeouts.clear();
+
+    //Step 3: Should add second timeout with interval 250 ms
+    service.state = ServiceState::FirstProbe;
+
+    handler
+        .handle(
+            &Event::Ttl(),
+            &mut vec![],
+            &mut Some(&mut service),
+            &mut None,
+            &mut timeouts,
+            &mut vec![],
+        )
+        .unwrap();
+
+    assert_eq!(timeouts.len(), 1);
+    assert_eq!(timeouts[0].1, 250);
+    assert_eq!(timeouts[0].0, ServiceState::WaitForSecondProbe);
 }
