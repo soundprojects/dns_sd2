@@ -139,7 +139,6 @@ fn test_probe_handler() {
     timeouts.clear();
 
     //Step 2: First probe finished change state
-    service.state = ServiceState::WaitForFirstProbe;
     handler
         .handle(
             &Event::TimeElapsed((ServiceState::WaitForFirstProbe, 250)),
@@ -151,15 +150,15 @@ fn test_probe_handler() {
         )
         .unwrap();
 
-    assert_eq!(service.state, ServiceState::FirstProbe);
+    assert_eq!(service.state, ServiceState::WaitForSecondProbe);
+    assert_eq!(timeouts.len(), 1);
+    assert_eq!(timeouts[0].1, 250);
     timeouts.clear();
 
-    //Step 3: Should add second timeout with interval 250 ms
-    service.state = ServiceState::FirstProbe;
-
+    //Step 3: Second probe finished change state
     handler
         .handle(
-            &Event::Ttl(),
+            &Event::TimeElapsed((ServiceState::WaitForSecondProbe, 250)),
             &mut vec![],
             &mut Some(&mut service),
             &mut None,
@@ -170,5 +169,21 @@ fn test_probe_handler() {
 
     assert_eq!(timeouts.len(), 1);
     assert_eq!(timeouts[0].1, 250);
-    assert_eq!(timeouts[0].0, ServiceState::WaitForSecondProbe);
+    assert_eq!(service.state, ServiceState::WaitForAnnouncing);
+    timeouts.clear();
+
+    //Step 4: Finished waiting for announcement, ready to announce now
+    handler
+        .handle(
+            &Event::TimeElapsed((ServiceState::WaitForAnnouncing, 250)),
+            &mut vec![],
+            &mut Some(&mut service),
+            &mut None,
+            &mut timeouts,
+            &mut vec![],
+        )
+        .unwrap();
+
+    assert_eq!(service.state, ServiceState::FirstAnnouncement);
+    timeouts.clear();
 }
