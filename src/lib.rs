@@ -74,7 +74,7 @@ pub enum MdnsError {
 /// ```
 pub struct DnsSd2 {
     records: Vec<ResourceRecord>,
-    registration: Option<&'static mut Service>,
+    registration: Option<Service>,
     query: Option<Query>,
     pub tx: UnboundedSender<Event>,
     rx: UnboundedReceiver<Event>,
@@ -137,10 +137,14 @@ impl<'a> DnsSd2 {
         timeouts: &mut Vec<(ServiceState, u64)>,
         queue: &mut Vec<MdnsMessage>,
     ) -> Result<(), MdnsError> {
+        let mut registration = None;
+        if self.registration.is_some() {
+            registration = self.registration.as_mut();
+        }
         h.handle(
             event,
             &mut self.records,
-            &mut self.registration,
+            &mut registration,
             &mut self.query,
             timeouts,
             queue,
@@ -277,7 +281,7 @@ impl<'a> DnsSd2 {
                     //Check for specific command or signals
                     match &result{
                         Event::Register(host, service, protocol, port, txt_records) => {
-                            self.registration = Some(Service{host, service, protocol, port, txt_records})
+                            self.registration = Some(Service{host: host.into(), service: service.into(), protocol: protocol.into(), port: *port, txt_records: txt_records.to_vec(), state: ServiceState::Prelude})
                         }
                         Event::Closing{} => {return}
                         _ => {}
