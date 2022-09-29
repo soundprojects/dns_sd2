@@ -165,7 +165,7 @@ impl<'a> DnsSd2 {
     /// pin_mut!(stream);
     ///
     /// while let Some(Ok(s)) = stream.next().await {
-    ///     debug!("Found a service {:?}", s);
+    ///     debug!("Registered a service {:?}", s);
     /// }
     /// ```
     pub async fn register(
@@ -186,10 +186,6 @@ impl<'a> DnsSd2 {
             .expect("Failed to send with Tx");
 
         self.init().await
-    }
-
-    pub fn update(&self) {
-        debug!("Updated HERE");
     }
 
     /// Browse for an Mdns [`Service`]
