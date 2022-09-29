@@ -74,3 +74,41 @@ impl<'a> Handler<'a> for AnnouncementHandler<'a> {
         Ok(())
     }
 }
+
+#[test]
+fn test_announce_handler() {
+    //Mock Service
+    //Result if Registration Handler worked properly
+    let mut service = Service {
+        host: "TestMachine".into(),
+        service: "_test".into(),
+        protocol: "_tcp".into(),
+        port: 53000,
+        txt_records: vec![],
+        state: ServiceState::FirstAnnouncement,
+    };
+
+    let handler = AnnouncementHandler::default();
+
+    //Pass into Handler
+    //Step 1: Send Announcement, Should add first timeout with interval 1000 ms
+    let mut timeouts = vec![];
+    let mut queue = vec![];
+    handler
+        .handle(
+            &Event::Ttl(),
+            &mut vec![],
+            &mut Some(&mut service),
+            &mut None,
+            &mut timeouts,
+            &mut queue,
+        )
+        .unwrap();
+
+    assert_eq!(timeouts.len(), 1);
+    assert_eq!(timeouts[0].1, 1000);
+    assert_eq!(timeouts[0].0, ServiceState::WaitForSecondAnnouncement);
+    assert_eq!(queue.len(), 1);
+
+    timeouts.clear();
+}

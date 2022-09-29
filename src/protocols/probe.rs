@@ -119,6 +119,7 @@ fn test_probe_handler() {
     //Pass into Handler
     //Step 1: Should add first timeout with interval 0-250 ms
     let mut timeouts = vec![];
+    let mut queue = vec![];
 
     handler
         .handle(
@@ -127,7 +128,7 @@ fn test_probe_handler() {
             &mut Some(&mut service),
             &mut None,
             &mut timeouts,
-            &mut vec![],
+            &mut queue,
         )
         .unwrap();
 
@@ -137,6 +138,7 @@ fn test_probe_handler() {
     assert_eq!(timeouts[0].0, ServiceState::WaitForFirstProbe);
 
     timeouts.clear();
+    queue.clear();
 
     //Step 2: First probe finished change state
     handler
@@ -146,14 +148,16 @@ fn test_probe_handler() {
             &mut Some(&mut service),
             &mut None,
             &mut timeouts,
-            &mut vec![],
+            &mut queue,
         )
         .unwrap();
 
     assert_eq!(service.state, ServiceState::WaitForSecondProbe);
     assert_eq!(timeouts.len(), 1);
+    assert_eq!(queue.len(), 1);
     assert_eq!(timeouts[0].1, 250);
     timeouts.clear();
+    queue.clear();
 
     //Step 3: Second probe finished change state
     handler
@@ -163,14 +167,16 @@ fn test_probe_handler() {
             &mut Some(&mut service),
             &mut None,
             &mut timeouts,
-            &mut vec![],
+            &mut queue,
         )
         .unwrap();
 
     assert_eq!(timeouts.len(), 1);
+    assert_eq!(queue.len(), 1);
     assert_eq!(timeouts[0].1, 250);
     assert_eq!(service.state, ServiceState::WaitForAnnouncing);
     timeouts.clear();
+    queue.clear();
 
     //Step 4: Finished waiting for announcement, ready to announce now
     handler
@@ -180,7 +186,7 @@ fn test_probe_handler() {
             &mut Some(&mut service),
             &mut None,
             &mut timeouts,
-            &mut vec![],
+            &mut queue,
         )
         .unwrap();
 
