@@ -94,6 +94,7 @@ fn test_announce_handler() {
     //Step 1: Send Announcement, Should add first timeout with interval 1000 ms
     let mut timeouts = vec![];
     let mut queue = vec![];
+
     handler
         .handle(
             &Event::Ttl(),
@@ -111,4 +112,20 @@ fn test_announce_handler() {
     assert_eq!(queue.len(), 1);
 
     timeouts.clear();
+    queue.clear();
+
+    //Step 2: First Announcement finished change state
+    handler
+        .handle(
+            &Event::TimeElapsed((ServiceState::WaitForSecondAnnouncement, 1000)),
+            &mut vec![],
+            &mut Some(&mut service),
+            &mut None,
+            &mut timeouts,
+            &mut queue,
+        )
+        .unwrap();
+
+    assert_eq!(service.state, ServiceState::Registered);
+    assert_eq!(queue.len(), 1);
 }
