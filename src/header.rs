@@ -1,4 +1,5 @@
 use packed_struct::prelude::*;
+use crate::MdnsError;
 
 /// MDNS Header Format
 ///
@@ -118,6 +119,23 @@ pub struct Header {
 impl Header {
     pub fn to_bytes(&self) -> Vec<u8> {
         self.pack().expect("Failed to pack Header").into()
+    }
+    
+    pub fn from_bytes(bytes: &Vec<u8>) -> Result<Self, MdnsError>{
+        //Header is 12 bytes in length
+        if bytes.len() < 12 {
+        error!("Message Header is not at least 12 bytes long");
+        return Err(MdnsError::InvalidMessage{})     
+        }
+        
+        //We need to convert Vec into matching byte array to unpack
+        let header_bytes: &[u8;12] = &bytes[0..13].try_into().expect("Should be valid");
+        if let Ok(header) = Header::unpack(header_bytes){
+            return Ok(header)  
+        }
+        else{
+            return Err(MdnsError::InvalidMessage{})     
+        }
     }
 }
 
