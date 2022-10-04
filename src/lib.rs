@@ -51,6 +51,8 @@ pub enum MdnsError {
     ServiceRemoved {},
     #[error("Closing")]
     Closing {},
+    #[error("Invalid Mdns Message")]
+    InvalidMessage {},
 }
 
 /// Construct DnsSd2 to allow for searching and registering services
