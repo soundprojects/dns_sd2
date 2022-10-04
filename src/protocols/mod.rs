@@ -9,3 +9,4 @@ pub mod passive_failure_observance;
 pub mod probe;
 pub mod probe_conflict;
 pub mod truncated;
+pub mod update_ttl;
