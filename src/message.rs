@@ -159,14 +159,22 @@ impl MdnsMessage {
         );
 
         a.cache_flush = true;
+        
+        let mut txt = ResourceRecord::create_txt_record(Name::new(service.host.clone() + ".local").expect("Should be valid"), service.txt_records.clone());
 
+        txt.cache_flush = true;
+        
         message.answers.push(ptr);
 
         message.answers.push(srv);
 
-        message.answers.push(a);
+        message.additionals.push(a);
+        
+        message.additionals.push(txt);
 
-        message.header.ancount = 3;
+        message.header.ancount = 2;
+
+        message.header.arcount = 2;
 
         message
     }
