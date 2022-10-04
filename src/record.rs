@@ -3,7 +3,7 @@ use packed_struct::PackedStruct;
 use crate::{
     name::Name,
     question::{QClass, QType},
-    records::{a::ARecord, aaaa::AAAARecord, ptr::PTRRecord, srv::SRVRecord},
+    records::{a::ARecord, aaaa::AAAARecord, ptr::PTRRecord, srv::SRVRecord, txt::TXTRecord},
 };
 use std::fmt::Debug;
 
@@ -200,6 +200,26 @@ impl ResourceRecord {
         ResourceRecord {
             name: Name::new(service).expect("Should be valid"),
             record_type: QType::Srv,
+            record_class: QClass::In,
+            cache_flush: false,
+            ttl: 60,
+            rdlength: rdata_packed
+                .len()
+                .try_into()
+                .expect("Could not cast usize to u16"),
+            rdata: Some(Box::new(rdata)),
+        }
+    }
+    
+    /// Create a 'TXT' type record
+    pub fn create_txt_record(name: Name,txt: Vec<String>) -> Self{
+        let rdata = TXTRecord{txt_record:txt};
+        
+        let rdata_packed = rdata.to_bytes();
+        
+        ResourceRecord {
+            name,
+            record_type: QType::Txt,
             record_class: QClass::In,
             cache_flush: false,
             ttl: 60,
