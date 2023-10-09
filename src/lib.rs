@@ -1,207 +1,322 @@
-// TODO UDP SOCKET STRUCTURE
-// Create a UDP Socket for every available interface on some IP
-// Join multicast group
-// Subscribe to changes and reconnect after a problem has occured
-
-//Parse incoming messages and sort them by mdns type
-//Trigger events
-
-//Send types
-
-// TODO DNS Struct
-// Message type
-// Header
-// TTL
-// RRData
-
-// TTL decreasing mechanism
-
-//Handle questions and resolves
-//Announcement and probing
-
-//Implement a timeout mechanism which waits for either a timeout or a response
-//Use select! with a counter for the retries
-
-//Use mspc channel to make the crate wait for sending goodbye packets on closure
-
 //Logging
 extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
-use std::{
-    io,
-    net::{Ipv4Addr, SocketAddrV4},
+use async_stream::try_stream;
+use futures::{executor::block_on, stream::FuturesUnordered, Stream, StreamExt};
+use message::MdnsMessage;
+use protocols::handler::{Event, Handler};
+use record::ResourceRecord;
+use service::{Query, Service, ServiceState};
+use std::{io, time::Duration};
+use thiserror::Error;
+use tokio::{
+    select,
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    time::interval,
+};
+use tokio_util::{codec::BytesCodec, udp::UdpFramed};
+
+use crate::{
+    protocols::{
+        announce::AnnouncementHandler, goodbye_packet::GoodbyeHandler, probe::ProbeHandler,
+    },
+    utility::{create_socket, send_message},
 };
 
-use rand::Rng;
-use socket2::{Domain, Protocol, SockAddr, Socket, Type};
-
-use tokio::net::UdpSocket;
-
-//MULTICAST Constants
 const IP_ANY: [u8; 4] = [0, 0, 0, 0];
 
-/// UTILITY FUNCTIONS
-///
+pub mod header;
+pub mod message;
+pub mod name;
+pub mod protocols;
+pub mod question;
+pub mod record;
+pub mod records;
+pub mod service;
+pub mod utility;
 
-/// Compress Name
-///
-/// Message compression for optimizing MDNS Records
-///
-/// [RFC6762 Section 18.14 - Name Compression](https://www.rfc-editor.org/rfc/rfc6762#section-18.14)
-/// [RFC1035 Section 4.1.4 - Message Compression](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4)
-///
-/// TODO Clarify protocol procedures
-//pub fn compress_name() -> String{
-//TODO
-//}
-
-/// Decompress Name
-///
-/// Message decompression for optimizing MDNS Records
-///
-/// [RFC6762 Section 18.14 - Name Compression](https://www.rfc-editor.org/rfc/rfc6762#section-18.14)
-/// [RFC1035 Section 4.1.4 - Message Compression](https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4)
-///
-/// TODO Clarify protocol procedures
-//pub fn decompress_name() -> String{
-//TODO
-//}
-
-/// Lexicographic Comparison
-///
-/// Compares two records for which is lexicographically 'later'
-///
-/// [RFC6762 Section 8.2 - Simultaneous Probe Tiebreak](https://www.rfc-editor.org/rfc/rfc6762#section-8.2)
-///
-/// TODO Clarify protocol procedures
-// Impl Custom ordering here for Service
-
-/// PROBING AND ANNOUNCING FUNCTIONS
-///
-
-/// Probe MDNS Service
-///
-/// First step in MDNS announcement protocol
-///
-/// This step is only available if MdnsResolver state is `State::Probing`
-///
-/// [RFC6762 Section 8.1 - Probing](https://www.rfc-editor.org/rfc/rfc6762#section-8.1)
-/// - Wait for a 0-250ms time period to prevent simultaneous querying by devices on startup
-/// - Query the service
-/// - Wait for 250ms or get a response -> Return Conflict Error
-/// - Query again
-/// - Wait for 250ms or get a response -> Return Conflict Error
-/// - Return Ok -> Service has not been registrered
-pub async fn probe() -> io::Result<()> {
-    let random_delay = rand::thread_rng().gen_range(0..250);
-    tokio::time::sleep(std::time::Duration::from_millis(random_delay)).await;
-
-    //TODO Query the service
-
-    //TODO Select statement with receiving and parsing / timer
-    tokio::time::sleep(std::time::Duration::from_millis(250)).await;
-
-    //TODO Select statement with receiving and parsing / timer
-    tokio::time::sleep(std::time::Duration::from_millis(250)).await;
-
-    Ok(())
+///Mdns Error Types
+#[derive(Debug, Error)]
+pub enum MdnsError {
+    #[error("Address is already taken")]
+    AddressAlreadyTaken {
+        #[from]
+        source: io::Error,
+    },
+    #[error("Service name is already taken")]
+    NameAlreadyTaken {},
+    #[error("Service was removed")]
+    ServiceRemoved {},
+    #[error("Closing")]
+    Closing {},
+    #[error("Invalid Mdns Message")]
+    InvalidMessage {},
 }
 
-/// Probe Tiebreak
+/// Construct DnsSd2 to allow for searching and registering services
 ///
-/// Resolve conflict in case of probe response by others
+/// ## Arguments
 ///
-/// This step is only available if MdnsResolver state is `State::Probing`
+/// Attribute | Explanation
+/// :--|:--
+/// Records | Contains a Vec of [`ResourceRecord`] currently active on the network
+/// Registrations | May contain a registered [`Service`]
+/// Query | May contain an active search
+/// Tx.Rx | Channel for communicating (closing)
 ///
-/// [RFC6762 Section 8.2 - Simultaneous Probe Tiebreak](https://www.rfc-editor.org/rfc/rfc6762#section-8.2)
-/// - Compare two services by lexicographic greatness
-/// - If greater, return `Ok(())`, else return `Error::ServiceOccupied`
-/// - If we return an error, Resolver should wait 1s and restart probing
-pub async fn probe_tiebreak() -> io::Result<()> {
-    //TODO
-
-    Ok(())
+/// ## Example
+///
+/// ```no_run
+/// use dns_sd2::DnsSd2;
+///
+/// let client = DnsSd2::default();
+///
+/// ```
+pub struct DnsSd2 {
+    records: Vec<ResourceRecord>,
+    registration: Option<Service>,
+    query: Option<Query>,
+    pub tx: UnboundedSender<Event>,
+    rx: UnboundedReceiver<Event>,
 }
 
-/// Announce MDNS Service
-///
-/// Second step in MDNS announcement protocol
-///
-/// This step is only available if MdnsResolver state is `State::Announcing`
-///
-/// [RFC6762 Section 8.3 - Announcing](https://www.rfc-editor.org/rfc/rfc6762#section-8.3)
-/// - Send unsollicited response with all answers, both shared and unique
-/// - For the unique records, set cache flush bit to '1'
-/// - Wait 1s
-/// - Send unsollicited response again
-pub async fn announce() -> io::Result<()> {
-    let random_delay = rand::thread_rng().gen_range(0..250);
-    tokio::time::sleep(std::time::Duration::from_millis(random_delay)).await;
+impl Default for DnsSd2 {
+    fn default() -> Self {
+        let (tx, rx) = unbounded_channel();
 
-    //TODO Send unsollicited response
-
-    //TODO Select statement with receiving and parsing / timer
-    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-
-    //TODO Send unsollicited response
-
-    Ok(())
+        Self {
+            records: Default::default(),
+            registration: Default::default(),
+            query: Default::default(),
+            tx,
+            rx,
+        }
+    }
 }
 
-/// Something
+impl Drop for DnsSd2 {
+    /// Drop DnsSd2
+    ///
+    /// When dropped or when receiving [`Event::Closing{}`]
+    /// Sends out Goodbye Packets if client initiated with [`DnsSd2::register()`]
+    /// To properly unregister a [`Service`] on the network
+    fn drop(&mut self) {
+        debug!("Dropping DnsSd2");
+        let handler = GoodbyeHandler::default();
+        //Socket
+        let udp_socket = create_socket().expect("Failed to create socket");
+
+        let mut frame = UdpFramed::new(udp_socket, BytesCodec::new());
+
+        let mut queue = vec![];
+
+        if self
+            .handle(&handler, &Event::Closing(), &mut vec![], &mut queue)
+            .is_ok()
+        {
+            //Note: We block here because Drop must be synchronous
+            for message in queue {
+                block_on(send_message(&mut frame, &message)).expect("Failed to send goodbye");
+            }
+        }
+    }
+}
+
+impl<'a> DnsSd2 {
+    /// Runs Chain of Responsibility for this client
+    ///
+    /// This function is called in the [`DnsSd2::init()`] loop
+    /// Each part of the chain handles a different part of the MDNS Protocol
+    ///
+    /// Should return `Ok(())` or it propogates an [`MdnsError`]
+    /// Mutates records, registration, query and timeouts depending on Handler input
+    pub fn handle<T: Handler<'a>>(
+        &mut self,
+        h: &T,
+        event: &Event,
+        timeouts: &mut Vec<(ServiceState, u64)>,
+        queue: &mut Vec<MdnsMessage>,
+    ) -> Result<(), MdnsError> {
+        let mut registration = None;
+        if self.registration.is_some() {
+            registration = self.registration.as_mut();
+        }
+        h.handle(
+            event,
+            &mut self.records,
+            &mut registration,
+            &mut self.query,
+            timeouts,
+            queue,
+        )?;
+        Ok(())
+    }
+
+    /// Registers an Mdns [`Service`]
+    ///
+    /// ## Example
+    ///
+    /// ```rust, ignore
+    /// use dns_sd2::Dns_Sd2;
+    ///
+    /// let stream = client.register("_myservice._udp.local".into(), vec![]).await;
+    ///
+    /// //This is necessary to iterate the Stream
+    /// pin_mut!(stream);
+    ///
+    /// while let Some(Ok(s)) = stream.next().await {
+    ///     debug!("Registered a service {:?}", s);
+    /// }
+    /// ```
+    pub async fn register(
+        &mut self,
+        host: String,
+        service: String,
+        protocol: String,
+        port: u16,
+        txt_records: Vec<String>,
+    ) -> impl Stream<Item = Result<Service, MdnsError>> + '_ {
+        debug!(
+            "Register Service {}.{}.{}.local with port {} with TXT Records {:?}",
+            host, service, protocol, port, txt_records
+        );
+
+        self.tx
+            .send(Event::Register(host, service, protocol, port, txt_records))
+            .expect("Failed to send with Tx");
+
+        self.init().await
+    }
+
+    /// Browse for an Mdns [`Service`]
+    ///
+    /// ## Example
+    ///
+    /// ```rust, ignore
+    /// use dns_sd2::Dns_Sd2;
+    ///
+    /// let stream = client.browse("_services._udp.local".into()).await;
+    ///
+    /// //This is necessary to iterate the Stream
+    /// pin_mut!(stream);
+    ///
+    /// while let Some(Ok(s)) = stream.next().await {
+    ///     debug!("Found a service {:?}", s);
+    /// }
+    /// ```
+    pub async fn browse(
+        &mut self,
+        name: String,
+    ) -> impl Stream<Item = Result<Service, MdnsError>> + '_ {
+        debug!("Browse for Service {}", name);
+
+        self.tx
+            .send(Event::Browse(name))
+            .expect("Failed to send with Tx");
+
+        self.init().await
+    }
+
+    /// Called by [`browse()`] or [`register()`] to run main loop
+    ///
+    /// This starts the main event loop for the library and builds the chain of responsibility
+    ///
+    /// A select! loop picks between a 1s Interval Stream, a dynamic interval stream set by the chain and the UdpFramed Stream
+    ///
+    /// Returns a stream for registration or search
+    pub async fn init(&mut self) -> impl Stream<Item = Result<Service, MdnsError>> + '_ {
+        info!("Initializing Event Loop");
+
+        try_stream! {
+                //Socket
+                let udp_socket = create_socket().expect("Failed to create socket");
+
+                let mut frame = UdpFramed::new(udp_socket, BytesCodec::new());
+
+                //Chain of responsibility
+                let mut probe_handler = ProbeHandler::default();
+                let mut announcement_handler = AnnouncementHandler::default();
+                let goodbye_handler = GoodbyeHandler::default();
+
+                //Set Chain Order from back to front
+                announcement_handler.set_next(&goodbye_handler);
+                probe_handler.set_next(&announcement_handler);
+
+
+                //Collection of timer futures
+                let mut timeouts = FuturesUnordered::new();
+                //Normal 1s TTL Timer
+                let mut interval = interval(Duration::from_secs(1));
+
+                loop {
+                    let result = select! {
+                        //Received a message on the Socket
+                        _ = frame.next() => {
+                            Event::Message(MdnsMessage::default())
+                        }
+                        //Received a Command from the client
+                        c = self.rx.recv() => {
+                            c.expect("Should contain a Command")
+                        }
+                        //Close signal handler
+                        _close = tokio::signal::ctrl_c() => {
+                            debug!("Ctrl C! Closing");
+                            Event::Closing()
+                        }
+                        //A dynamic timeout has finished
+                        t = timeouts.next(), if !timeouts.is_empty() => {
+                            debug!("Timed out for {:?} ms", t);
+                            Event::TimeElapsed(t.unwrap_or_default())
+                        }
+                        //TTL 1s timer has ticked
+                        _ = interval.tick() => {
+                            Event::Ttl()
+                        }
+                    };
+
+                    //Check for specific command or signals
+                    match &result{
+                        Event::Register(host, service, protocol, port, txt_records) => {
+                            self.registration = Some(Service{host: host.into(), service: service.into(), protocol: protocol.into(), port: *port, txt_records: txt_records.to_vec(), state: ServiceState::Prelude})
+                        }
+                        Event::Closing{} => {return}
+                        _ => {}
+                    }
+
+                    //Fill a Vec with new timeouts and a Vec with a queue of messages we will send with the socket
+                    let mut new_timeouts = vec![];
+                    let mut queue = vec![];
+
+
+                    //Execute the chain
+                    self.handle(&probe_handler, &result, &mut new_timeouts, &mut queue)?;
+
+                    let s = Service::default();
+                    yield s;
+
+                    //Add the resulting timeouts from the chain to our dynamic interval futures
+                    for (s, t) in new_timeouts {
+                        timeouts.push(sleep_for(s,t));
+                    }
+
+                    //Send the messages in the queue with our socket
+                    for message in queue{
+                        send_message(&mut frame, &message).await.expect("Should send Message");
+                    }
+
+
+
+                }
+        }
+    }
+}
+
+/// Sleep for a certain duration
 ///
-/// Creates a UDP IP4 Socket and binds to the 'any' 0.0.0.0 interface
-///
-/// Allows the port to be reused
-///
-/// Connect to Multicast group
-///
-/// [DNS Specification](https://www.rfc-editor.org/rfc/rfc6762#section-8.1)
-pub async fn something() -> io::Result<()> {
-    pretty_env_logger::init_timed();
-
-    info!("Running something");
-
-    //Create a udp ip4 socket
-    let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
-
-    //Allow this port to be reused by other sockets
-    socket.set_reuse_address(true)?;
-
-    //Create IPV4 any adress
-    let address = SocketAddrV4::new(IP_ANY.into(), 5353);
-
-    debug!("Created Address");
-
-    //Bind to wildcard 0.0.0.0
-    socket.bind(&SockAddr::from(address))?;
-
-    debug!("Bound Socket");
-
-    //Join multicast group
-    socket.join_multicast_v4(&Ipv4Addr::new(224, 0, 0, 51), address.ip())?;
-
-    info!("Joined Multicast");
-
-    //Convert to std::net udp socket
-    let udp_std_socket: std::net::UdpSocket = socket.into();
-
-    //Convert to tokio udp socket
-    let udp_socket = UdpSocket::from_std(udp_std_socket)?;
-
-    info!(
-        "Created a UDP Socket at {}, {}",
-        address.ip().to_string(),
-        address.port().to_string()
-    );
-
-    //Spawn task for listening to messages
-
-    //Send first probing
-
-    debug!("Ready to probe");
-
-    Ok(())
+/// Pass along the [`ServiceState`] for identification of finished timeouts in the  [`Handler`] chain
+async fn sleep_for(state: ServiceState, duration: u64) -> (ServiceState, u64) {
+    tokio::time::sleep(Duration::from_millis(duration)).await;
+    (state, duration)
 }
